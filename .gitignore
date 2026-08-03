@@ -1,0 +1,49 @@
+# =========================
+# IDE & OS Files
+# =========================
+.idea/
+*.iml
+.vscode/
+.DS_Store
+Thumbs.db
+
+# =========================
+# Sensitive Data & Secrets
+# =========================
+.env
+.env.*
+*.local
+!*.example
+!*.sample
+secrets/
+keys/
+*.pem
+
+# =========================
+# Backend (Spring Boot / Maven)
+# =========================
+backend/target/
+backend/bin/
+backend/build/
+backend/out/
+backend/.mvn/wrapper/maven-wrapper.jar
+backend/*.log
+backend/logs/
+backend/*.class
+
+# =========================
+# Frontend (React / Vite)
+# =========================
+frontend/node_modules/
+frontend/dist/
+frontend/build/
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+frontend/.pnpm-debug.log*
+frontend/coverage/
+
+# =========================
+# Docker
+# =========================
+docker-compose.override.yml

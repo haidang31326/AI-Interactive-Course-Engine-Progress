@@ -2,7 +2,7 @@ export type BlockType = 'theory_markdown' | 'interactive_fill_blank' | 'interact
 
 export interface BaseBlock {
   type: BlockType;
-  imagePrompt?: string; // AI generated prompt for dynamic illustration
+  referenceLink?: string; // AI generated related reference link
 }
 
 export interface TheoryBlock extends BaseBlock {

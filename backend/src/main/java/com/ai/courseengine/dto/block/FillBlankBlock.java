@@ -10,5 +10,5 @@ public class FillBlankBlock implements Block {
     private String questionText; // The text with blanks, e.g., "The capital of France is {1}."
     private Map<String, String> correctAnswers; // map of placeholder ID -> correct word
     private List<String> hints;
-    private String imagePrompt;
+    private String referenceLink;
 }

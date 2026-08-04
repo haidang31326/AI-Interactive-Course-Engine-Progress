@@ -122,13 +122,12 @@ const FillBlankPane: React.FC<Props> = ({ block, onSuccess }) => {
           >
             {isSuccess ? 'Perfect! You got all blanks correct.' : 'Some answers are incorrect. Try again!'}
             
-            {isSuccess && block.imagePrompt && (
-              <img 
-                src={`https://image.pollinations.ai/prompt/${encodeURIComponent(block.imagePrompt)}?width=800&height=400&nologo=true`} 
-                alt="AI Illustration" 
-                className="mt-4 rounded-xl shadow-md w-full object-cover border border-green-200" 
-                loading="lazy"
-              />
+            {isSuccess && block.referenceLink && (
+              <div className="mt-4 pt-4 border-t border-green-200">
+                <a href={block.referenceLink} target="_blank" rel="noopener noreferrer" className="inline-flex items-center text-green-700 hover:text-green-900 font-semibold transition-colors">
+                  🔗 Reference & Further Reading
+                </a>
+              </div>
             )}
           </motion.div>
         )}

@@ -105,20 +105,20 @@ public class GeminiAiService {
             There are EXACTLY 3 types of blocks allowed:
             
             1. "theory_markdown": For teaching concepts. Keep it concise and formatted in markdown.
-               Structure: {"type": "theory_markdown", "content": "markdown text", "imagePrompt": "A highly descriptive prompt for an AI image generator illustrating this theory."}
+               Structure: {"type": "theory_markdown", "content": "markdown text", "referenceLink": "https://en.wikipedia.org/wiki/..."}
                
             2. "interactive_fill_blank": For testing recall. 
-               Structure: {"type": "interactive_fill_blank", "questionText": "The capital of France is {1}.", "correctAnswers": {"1": "Paris"}, "hints": ["It's a city of light"], "imagePrompt": "A beautiful photo of Paris Eiffel Tower"}
+               Structure: {"type": "interactive_fill_blank", "questionText": "The capital of France is {1}.", "correctAnswers": {"1": "Paris"}, "hints": ["It's a city of light"], "referenceLink": "https://en.wikipedia.org/wiki/Paris"}
                
             3. "interactive_scenario": For situational testing or multiple choice.
-               Structure: {"type": "interactive_scenario", "scenarioDescription": "A situational question", "options": [{"id": "a", "text": "Option 1", "isCorrect": true}], "explanation": "Why this is correct", "imagePrompt": "An illustration of the scenario happening"}
+               Structure: {"type": "interactive_scenario", "scenarioDescription": "A situational question", "options": [{"id": "a", "text": "Option 1", "isCorrect": true}], "explanation": "Why this is correct", "referenceLink": "https://en.wikipedia.org/wiki/..."}
             
             RULES:
             - You MUST generate a rich, comprehensive course. 
             - For EVERY theory block, you MUST generate AT LEAST 1 to 2 interactive blocks (mixing fill-in-the-blanks and scenarios).
             - The lesson MUST alternate logically, but heavily weight towards interactive practice.
             - CRITICAL: Output MUST be 100% valid, strictly parsable JSON. ALWAYS use double quotes for strings and keys. NEVER use backticks (`) or single quotes for JSON keys or values.
-            - Extract key information from the raw text provided below.
+            - Provide a real or highly probable Wikipedia/educational reference link for further reading in 'referenceLink'.
             
             RAW TEXT TO PROCESS:
             """ + rawText;

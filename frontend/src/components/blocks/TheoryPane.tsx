@@ -19,16 +19,17 @@ const TheoryPane: React.FC<Props> = ({ block }) => {
         <ReactMarkdown>{block.content}</ReactMarkdown>
       </div>
 
-      {block.imagePrompt && (
-        <motion.img 
+      {block.referenceLink && (
+        <motion.div 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.5 }}
-          src={`https://image.pollinations.ai/prompt/${encodeURIComponent(block.imagePrompt)}?width=800&height=500&nologo=true`} 
-          alt="AI Theory Illustration" 
-          className="mt-6 rounded-2xl shadow-lg w-full object-cover border-4 border-white"
-          loading="lazy"
-        />
+          className="mt-6"
+        >
+          <a href={block.referenceLink} target="_blank" rel="noopener noreferrer" className="inline-flex items-center text-indigo-600 hover:text-indigo-800 font-semibold transition-colors">
+            🔗 Learn more about this topic
+          </a>
+        </motion.div>
       )}
     </motion.div>
   );

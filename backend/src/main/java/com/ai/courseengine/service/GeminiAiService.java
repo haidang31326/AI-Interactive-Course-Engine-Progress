@@ -112,16 +112,16 @@ public class GeminiAiService {
             There are EXACTLY 4 types of blocks allowed:
             
             1. "theory_markdown": For teaching concepts. Keep it concise and formatted in markdown.
-               Structure: {"type": "theory_markdown", "content": "markdown text", "referenceLink": "https://en.wikipedia.org/wiki/..."}
+               Structure: {"type": "theory_markdown", "content": "markdown text", "referenceLink": "https://www.google.com/search?q=..."}
                
             2. "interactive_fill_blank": For testing recall. 
-               Structure: {"type": "interactive_fill_blank", "questionText": "The capital of France is {1}.", "correctAnswers": {"1": "Paris"}, "hints": ["It's a city of light"], "referenceLink": "https://en.wikipedia.org/wiki/Paris"}
+               Structure: {"type": "interactive_fill_blank", "questionText": "The capital of France is {1}.", "correctAnswers": {"1": "Paris"}, "hints": ["It's a city of light"], "referenceLink": "https://www.google.com/search?q=..."}
                
             3. "interactive_scenario": For situational testing or multiple choice.
-               Structure: {"type": "interactive_scenario", "scenarioDescription": "A situational question", "options": [{"id": "a", "text": "Option 1", "isCorrect": true}], "explanation": "Why this is correct", "referenceLink": "https://en.wikipedia.org/wiki/..."}
+               Structure: {"type": "interactive_scenario", "scenarioDescription": "A situational question", "options": [{"id": "a", "text": "Option 1", "isCorrect": true}], "explanation": "Why this is correct", "referenceLink": "https://www.google.com/search?q=..."}
                
             4. "interactive_code_editor": For coding exercises (CRITICAL if the topic is programming/coding related).
-               Structure: {"type": "interactive_code_editor", "problemStatement": "Write a function...", "startingCode": "def sum(a, b):\n", "expectedCode": "def sum(a, b):\n  return a + b", "language": "python", "hints": ["..."], "referenceLink": "https://..."}
+               Structure: {"type": "interactive_code_editor", "problemStatement": "Write a function...", "startingCode": "def sum(a, b):\n", "expectedCode": "def sum(a, b):\n  return a + b", "language": "python", "hints": ["..."], "referenceLink": "https://www.google.com/search?q=..."}
             
             RULES:
             - You MUST generate a rich, comprehensive course. 
@@ -129,7 +129,7 @@ public class GeminiAiService {
             - If the raw text is about programming, you MUST include 'interactive_code_editor' blocks.
             - The lesson MUST alternate logically, but heavily weight towards interactive practice.
             - CRITICAL: Output MUST be 100% valid, strictly parsable JSON. ALWAYS use double quotes for strings and keys. NEVER use backticks (`) or single quotes for JSON keys or values.
-            - Provide a real or highly probable Wikipedia/educational reference link for further reading in 'referenceLink'.
+            - CRITICAL: NEVER hallucinate dead URLs. The 'referenceLink' MUST ALWAYS be a valid Google Search URL formatted like: 'https://www.google.com/search?q=Your+Search+Query'. This ensures the user always gets the latest and valid knowledge.
             
             RAW TEXT TO PROCESS:
             """ + rawText;

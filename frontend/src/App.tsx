@@ -4,7 +4,8 @@ import axios from 'axios';
 import TheoryPane from './components/blocks/TheoryPane';
 import FillBlankPane from './components/blocks/FillBlankPane';
 import ScenarioPane from './components/blocks/ScenarioPane';
-import type { TheoryBlock, FillBlankBlock, ScenarioBlock, Block } from './types';
+import CodePane from './components/blocks/CodePane';
+import type { TheoryBlock, FillBlankBlock, ScenarioBlock, CodeBlock, Block } from './types';
 import { BookOpen, UploadCloud, Loader2 } from 'lucide-react';
 
 const API_BASE = 'http://localhost:8080/api/courses';
@@ -179,6 +180,13 @@ function App() {
                 <ScenarioPane 
                   key={`scenario-${currentStepIndex}`}
                   block={currentBlock as ScenarioBlock} 
+                  onSuccess={handleInteractiveSuccess} 
+                />
+              )}
+              {currentBlock.type === 'interactive_code_editor' && (
+                <CodePane 
+                  key={`code-${currentStepIndex}`}
+                  block={currentBlock as CodeBlock} 
                   onSuccess={handleInteractiveSuccess} 
                 />
               )}

@@ -102,7 +102,7 @@ public class GeminiAiService {
             You MUST return a strict JSON array of objects representing "Blocks" of the lesson. 
             Do NOT wrap the output in markdown code blocks like ```json. Return ONLY raw JSON array.
             
-            There are EXACTLY 3 types of blocks allowed:
+            There are EXACTLY 4 types of blocks allowed:
             
             1. "theory_markdown": For teaching concepts. Keep it concise and formatted in markdown.
                Structure: {"type": "theory_markdown", "content": "markdown text", "referenceLink": "https://en.wikipedia.org/wiki/..."}
@@ -112,10 +112,14 @@ public class GeminiAiService {
                
             3. "interactive_scenario": For situational testing or multiple choice.
                Structure: {"type": "interactive_scenario", "scenarioDescription": "A situational question", "options": [{"id": "a", "text": "Option 1", "isCorrect": true}], "explanation": "Why this is correct", "referenceLink": "https://en.wikipedia.org/wiki/..."}
+               
+            4. "interactive_code_editor": For coding exercises (CRITICAL if the topic is programming/coding related).
+               Structure: {"type": "interactive_code_editor", "problemStatement": "Write a function...", "startingCode": "def sum(a, b):\n", "expectedCode": "def sum(a, b):\n  return a + b", "language": "python", "hints": ["..."], "referenceLink": "https://..."}
             
             RULES:
             - You MUST generate a rich, comprehensive course. 
-            - For EVERY theory block, you MUST generate AT LEAST 1 to 2 interactive blocks (mixing fill-in-the-blanks and scenarios).
+            - For EVERY theory block, you MUST generate AT LEAST 1 to 2 interactive blocks (choose from fill_blank, scenario, or code_editor).
+            - If the raw text is about programming, you MUST include 'interactive_code_editor' blocks.
             - The lesson MUST alternate logically, but heavily weight towards interactive practice.
             - CRITICAL: Output MUST be 100% valid, strictly parsable JSON. ALWAYS use double quotes for strings and keys. NEVER use backticks (`) or single quotes for JSON keys or values.
             - Provide a real or highly probable Wikipedia/educational reference link for further reading in 'referenceLink'.

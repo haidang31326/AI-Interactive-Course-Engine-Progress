@@ -15,8 +15,11 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
     @JsonSubTypes.Type(value = FillBlankBlock.class, name = "interactive_fill_blank"),
     @JsonSubTypes.Type(value = FillBlankBlock.class, name = "fill_blank"),
     @JsonSubTypes.Type(value = FillBlankBlock.class, name = "fill_in_the_blank"),
+    @JsonSubTypes.Type(value = FillBlankBlock.class, name = "fill_in_the_blank"),
     @JsonSubTypes.Type(value = ScenarioBlock.class, name = "interactive_scenario"),
-    @JsonSubTypes.Type(value = ScenarioBlock.class, name = "scenario")
+    @JsonSubTypes.Type(value = ScenarioBlock.class, name = "scenario"),
+    @JsonSubTypes.Type(value = CodeBlock.class, name = "interactive_code_editor"),
+    @JsonSubTypes.Type(value = CodeBlock.class, name = "code_editor")
 })
 public interface Block {
 }

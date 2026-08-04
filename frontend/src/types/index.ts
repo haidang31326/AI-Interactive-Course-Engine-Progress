@@ -1,4 +1,4 @@
-export type BlockType = 'theory_markdown' | 'interactive_fill_blank' | 'interactive_scenario';
+export type BlockType = 'theory_markdown' | 'interactive_fill_blank' | 'interactive_scenario' | 'interactive_code_editor';
 
 export interface BaseBlock {
   type: BlockType;
@@ -30,4 +30,13 @@ export interface ScenarioBlock extends BaseBlock {
   explanation: string;
 }
 
-export type Block = TheoryBlock | FillBlankBlock | ScenarioBlock;
+export interface CodeBlock extends BaseBlock {
+  type: 'interactive_code_editor';
+  problemStatement: string;
+  startingCode: string;
+  expectedCode: string;
+  language: string;
+  hints?: string[];
+}
+
+export type Block = TheoryBlock | FillBlankBlock | ScenarioBlock | CodeBlock;

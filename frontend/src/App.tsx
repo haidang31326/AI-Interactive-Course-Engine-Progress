@@ -143,7 +143,7 @@ function App() {
   const isInteractiveNow = currentBlock.type !== 'theory_markdown';
 
   return (
-    <div className="min-h-screen flex flex-col font-sans bg-slate-50">
+    <div className="h-screen flex flex-col font-sans bg-slate-50 overflow-hidden">
       <header className="bg-white shadow-sm border-b border-slate-200 px-8 py-4 flex justify-between items-center z-10">
         <div className="flex items-center space-x-3 text-indigo-700">
           <BookOpen className="w-8 h-8" />

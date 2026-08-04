@@ -9,6 +9,7 @@ public class ScenarioBlock implements Block {
     private String scenarioDescription;
     private List<Option> options;
     private String explanation; // Explanation shown after answering
+    private String imagePrompt;
 
     @Data
     public static class Option {

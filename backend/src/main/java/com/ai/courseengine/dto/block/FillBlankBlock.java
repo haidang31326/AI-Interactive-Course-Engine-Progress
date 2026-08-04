@@ -8,6 +8,7 @@ import java.util.Map;
 public class FillBlankBlock implements Block {
     private String type = "interactive_fill_blank";
     private String questionText; // The text with blanks, e.g., "The capital of France is {1}."
-    private Map<String, String> correctAnswers; // e.g., {"1": "Paris"}
+    private Map<String, String> correctAnswers; // map of placeholder ID -> correct word
     private List<String> hints;
+    private String imagePrompt;
 }

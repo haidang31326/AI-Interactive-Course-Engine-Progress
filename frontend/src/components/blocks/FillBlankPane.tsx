@@ -81,13 +81,32 @@ const FillBlankPane: React.FC<Props> = ({ block, onSuccess }) => {
           {renderQuestionText()}
         </motion.div>
 
-        {showHint && block.hints && block.hints.length > 0 && (
+        {showHint && !isSuccess && block.hints && block.hints.length > 0 && (
           <motion.div 
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             className="text-red-500 bg-red-50 p-4 rounded-xl mt-6 inline-block"
           >
             💡 <strong>Hint:</strong> {block.hints[0]}
+          </motion.div>
+        )}
+
+        {showFeedback && (
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className={`mt-6 p-4 rounded-xl font-medium ${isSuccess ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}
+          >
+            {isSuccess ? 'Perfect! You got all blanks correct.' : 'Some answers are incorrect. Try again!'}
+            
+            {isSuccess && block.imagePrompt && (
+              <img 
+                src={`https://image.pollinations.ai/prompt/${encodeURIComponent(block.imagePrompt)}?width=800&height=400&nologo=true`} 
+                alt="AI Illustration" 
+                className="mt-4 rounded-xl shadow-md w-full object-cover border border-green-200" 
+                loading="lazy"
+              />
+            )}
           </motion.div>
         )}
 

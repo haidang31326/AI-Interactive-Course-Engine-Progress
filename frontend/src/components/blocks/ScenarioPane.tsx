@@ -84,6 +84,14 @@ const ScenarioPane: React.FC<Props> = ({ block, onSuccess }) => {
             className={`p-5 rounded-xl ${isSuccess ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}
           >
             <strong>{isSuccess ? 'Correct!' : 'Not quite.'}</strong> {block.explanation}
+            {isSuccess && block.imagePrompt && (
+              <img 
+                src={`https://image.pollinations.ai/prompt/${encodeURIComponent(block.imagePrompt)}?width=800&height=400&nologo=true`} 
+                alt="AI Illustration" 
+                className="mt-4 rounded-xl shadow-md w-full object-cover border border-green-200" 
+                loading="lazy"
+              />
+            )}
           </motion.div>
         )}
 
@@ -99,14 +107,6 @@ const ScenarioPane: React.FC<Props> = ({ block, onSuccess }) => {
               }`}
             >
               Check Answer
-            </button>
-          )}
-          {isSuccess && (
-            <button
-              onClick={onSuccess}
-              className="px-8 py-3 bg-green-600 text-white rounded-full font-semibold shadow-lg hover:bg-green-700 transition-all transform animate-bounce"
-            >
-              Continue to Next Lesson
             </button>
           )}
         </div>

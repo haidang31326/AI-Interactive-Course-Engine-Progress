@@ -91,16 +91,18 @@ public class GeminiAiService {
             There are EXACTLY 3 types of blocks allowed:
             
             1. "theory_markdown": For teaching concepts. Keep it concise and formatted in markdown.
-               Structure: {"type": "theory_markdown", "content": "markdown text"}
+               Structure: {"type": "theory_markdown", "content": "markdown text", "imagePrompt": "A highly descriptive prompt for an AI image generator illustrating this theory."}
                
             2. "interactive_fill_blank": For testing recall. 
-               Structure: {"type": "interactive_fill_blank", "questionText": "The capital of France is {1}.", "correctAnswers": {"1": "Paris"}, "hints": ["It's a city of light"]}
+               Structure: {"type": "interactive_fill_blank", "questionText": "The capital of France is {1}.", "correctAnswers": {"1": "Paris"}, "hints": ["It's a city of light"], "imagePrompt": "A beautiful photo of Paris Eiffel Tower"}
                
             3. "interactive_scenario": For situational testing or multiple choice.
-               Structure: {"type": "interactive_scenario", "scenarioDescription": "A situational question", "options": [{"id": "a", "text": "Option 1", "isCorrect": true}], "explanation": "Why this is correct"}
+               Structure: {"type": "interactive_scenario", "scenarioDescription": "A situational question", "options": [{"id": "a", "text": "Option 1", "isCorrect": true}], "explanation": "Why this is correct", "imagePrompt": "An illustration of the scenario happening"}
             
             RULES:
-            - The lesson MUST alternate logically between theory blocks and interactive blocks to keep the user engaged.
+            - You MUST generate a rich, comprehensive course. 
+            - For EVERY theory block, you MUST generate AT LEAST 3 to 5 interactive blocks (mixing fill-in-the-blanks and scenarios) to thoroughly test the user's understanding of that specific theory. Do NOT just generate 1 exercise per theory.
+            - The lesson MUST alternate logically, but heavily weight towards interactive practice.
             - Extract key information from the raw text provided below.
             
             RAW TEXT TO PROCESS:

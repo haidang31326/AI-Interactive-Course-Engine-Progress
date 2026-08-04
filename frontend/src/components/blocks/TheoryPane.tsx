@@ -15,9 +15,21 @@ const TheoryPane: React.FC<Props> = ({ block }) => {
       transition={{ duration: 0.5 }}
       className="prose prose-lg dark:prose-invert max-w-none text-slate-800"
     >
-      <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100">
+      <div className="prose prose-slate prose-lg max-w-none text-slate-700 leading-relaxed mb-6">
         <ReactMarkdown>{block.content}</ReactMarkdown>
       </div>
+
+      {block.imagePrompt && (
+        <motion.img 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.5 }}
+          src={`https://image.pollinations.ai/prompt/${encodeURIComponent(block.imagePrompt)}?width=800&height=500&nologo=true`} 
+          alt="AI Theory Illustration" 
+          className="mt-6 rounded-2xl shadow-lg w-full object-cover border-4 border-white"
+          loading="lazy"
+        />
+      )}
     </motion.div>
   );
 };

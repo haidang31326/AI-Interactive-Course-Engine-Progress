@@ -65,6 +65,21 @@ const CodePane: React.FC<Props> = ({ block, onSuccess }) => {
           <textarea
             value={code}
             onChange={(e) => setCode(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Tab') {
+                e.preventDefault();
+                const target = e.target as HTMLTextAreaElement;
+                const start = target.selectionStart;
+                const end = target.selectionEnd;
+
+                const newCode = code.substring(0, start) + '  ' + code.substring(end);
+                setCode(newCode);
+
+                setTimeout(() => {
+                  target.selectionStart = target.selectionEnd = start + 2;
+                }, 0);
+              }
+            }}
             className={`flex-grow w-full h-full min-h-[300px] bg-slate-950 text-green-400 p-6 pt-10 rounded-xl font-mono text-lg outline-none resize-none transition-colors border-2 ${
               hasError ? 'border-red-500/50' : isSuccess ? 'border-green-500/50' : 'border-slate-800 focus:border-indigo-500/50'
             }`}

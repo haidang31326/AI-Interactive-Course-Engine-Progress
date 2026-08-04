@@ -93,6 +93,16 @@ function App() {
     }
   };
 
+  const handlePrevious = () => {
+    if (currentStepIndex > 0) {
+      const prevIndex = currentStepIndex - 1;
+      setCurrentStepIndex(prevIndex);
+      if (currentCourse) {
+        saveProgress(currentCourse.id, prevIndex);
+      }
+    }
+  };
+
   const handleInteractiveSuccess = () => {
     setCanProceed(true);
   };
@@ -284,7 +294,19 @@ function App() {
           )}
         </main>
 
-        <footer className="bg-white border-t border-slate-200 p-4 flex justify-center z-10">
+        <footer className="bg-white border-t border-slate-200 p-4 flex justify-center items-center z-10 space-x-4">
+          <button
+            onClick={handlePrevious}
+            disabled={currentStepIndex === 0}
+            className={`px-6 py-3 rounded-full font-bold shadow-sm transition-all ${
+              currentStepIndex === 0
+                ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                : 'bg-slate-200 hover:bg-slate-300 text-slate-700 transform hover:-translate-y-0.5'
+            }`}
+          >
+            Previous
+          </button>
+
           {!isInteractiveNow && (
             <button
               onClick={handleNext}

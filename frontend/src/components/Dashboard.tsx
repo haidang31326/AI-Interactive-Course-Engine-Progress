@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 
 // --- SIDEBAR WIDGETS ---
 
-const AiRecommendationsWidget = () => {
+const AiRecommendationsWidget: React.FC<{ onCreateNew: () => void }> = ({ onCreateNew }) => {
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
       <div className="flex items-center justify-between mb-4">
@@ -21,7 +21,10 @@ const AiRecommendationsWidget = () => {
           <p className="text-xs font-bold text-emerald-400 mb-1 uppercase tracking-wider">Up Next</p>
           <h4 className="text-white font-semibold mb-2">Advanced C# Patterns</h4>
           <p className="text-sm text-slate-400 mb-4">Based on your recent activity, this is the logical next step.</p>
-          <button className="text-xs font-bold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 py-1.5 px-3 rounded-lg transition-colors border border-emerald-500/20">
+          <button 
+            onClick={onCreateNew}
+            className="text-xs font-bold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 py-1.5 px-3 rounded-lg transition-colors border border-emerald-500/20"
+          >
             Generate Course
           </button>
         </div>
@@ -79,21 +82,31 @@ const ResourcesWidget: React.FC<{ userId: number }> = ({ userId }) => {
       </div>
       
       <div className="space-y-3">
-        <div className="group cursor-pointer bg-slate-950 border border-slate-800 rounded-xl p-3 flex items-center hover:border-emerald-500/30 transition-colors">
+        <a 
+          href="https://learn.microsoft.com/en-us/dotnet/csharp/tour-of-csharp/" 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="group cursor-pointer bg-slate-950 border border-slate-800 rounded-xl p-3 flex items-center hover:border-emerald-500/30 transition-colors block"
+        >
           <Code2 className="w-5 h-5 text-slate-400 group-hover:text-emerald-400 mr-3 transition-colors" />
           <div className="flex-1">
             <h4 className="text-sm font-semibold text-slate-200 group-hover:text-white transition-colors">C# Cheat Sheet</h4>
             <p className="text-xs text-slate-500">Syntax, LINQ, Loops</p>
           </div>
-        </div>
+        </a>
 
-        <div className="group cursor-pointer bg-slate-950 border border-slate-800 rounded-xl p-3 flex items-center hover:border-emerald-500/30 transition-colors">
+        <a 
+          href="https://learn.microsoft.com/" 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="group cursor-pointer bg-slate-950 border border-slate-800 rounded-xl p-3 flex items-center hover:border-emerald-500/30 transition-colors block"
+        >
           <ExternalLink className="w-5 h-5 text-slate-400 group-hover:text-emerald-400 mr-3 transition-colors" />
           <div className="flex-1">
             <h4 className="text-sm font-semibold text-slate-200 group-hover:text-white transition-colors">Microsoft Learn</h4>
             <p className="text-xs text-slate-500">Official Documentation</p>
           </div>
-        </div>
+        </a>
 
         <div className="mt-4 pt-4 border-t border-slate-800">
           <p className="text-xs font-bold text-slate-400 mb-2 uppercase tracking-wider flex items-center justify-between">
@@ -268,7 +281,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
           {/* RIGHT COLUMN: 1/3 SIDEBAR */}
           <div className="lg:col-span-1 space-y-6">
-            <AiRecommendationsWidget />
+            <AiRecommendationsWidget onCreateNew={onCreateNew} />
             <ResourcesWidget userId={user.id} />
           </div>
 

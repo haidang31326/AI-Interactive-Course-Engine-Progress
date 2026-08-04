@@ -1,57 +1,143 @@
 import React, { useEffect, useState } from 'react';
 import type { Course, User } from '../types';
-import { LogOut, Plus, Play, BookOpen, Loader2, Lightbulb, Sparkles, Code2, FileText, ExternalLink } from 'lucide-react';
+import { LogOut, Plus, Play, BookOpen, Loader2, FileText, Timer, Search, Trophy, Medal, Pause, StopCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 // --- SIDEBAR WIDGETS ---
 
-const AiRecommendationsWidget: React.FC<{ courses: Course[] }> = ({ courses }) => {
-  const hasCourses = courses.length > 0;
-  const latestCourse = hasCourses ? courses[courses.length - 1].title : null;
-  const upNextTitle = latestCourse ? `Advanced ${latestCourse}` : "Start Your First Course";
-  const upNextDesc = latestCourse ? "Based on your recent activity, this is the logical next step." : "Upload a PDF to let AI generate your first learning path.";
+const PomodoroWidget = () => {
+  const [timeLeft, setTimeLeft] = useState(25 * 60);
+  const [isActive, setIsActive] = useState(false);
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout | null = null;
+    if (isActive && timeLeft > 0) {
+      interval = setInterval(() => {
+        setTimeLeft((time) => time - 1);
+      }, 1000);
+    } else if (timeLeft === 0) {
+      setIsActive(false);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isActive, timeLeft]);
+
+  const toggleTimer = () => setIsActive(!isActive);
+  const resetTimer = () => {
+    setIsActive(false);
+    setTimeLeft(25 * 60);
+  };
+
+  const minutes = Math.floor(timeLeft / 60);
+  const seconds = timeLeft % 60;
 
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
       <div className="flex items-center justify-between mb-4">
         <h3 className="font-bold text-white flex items-center">
-          <Sparkles className="w-5 h-5 mr-2 text-emerald-500" />
-          AI Recommendations
+          <Timer className="w-5 h-5 mr-2 text-emerald-500" />
+          Focus Timer
         </h3>
       </div>
-      
-      <div className="space-y-4">
-        <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 relative overflow-hidden group">
-          <div className="absolute top-0 right-0 w-16 h-16 bg-emerald-500/10 rounded-bl-full -mr-8 -mt-8 transition-transform group-hover:scale-150"></div>
-          <p className="text-xs font-bold text-emerald-400 mb-1 uppercase tracking-wider">Up Next</p>
-          <h4 className="text-white font-semibold mb-2">{upNextTitle}</h4>
-          <p className="text-sm text-slate-400">{upNextDesc}</p>
+      <div className="bg-slate-950 border border-slate-800 rounded-xl p-6 text-center">
+        <div className="text-4xl font-black text-emerald-400 font-mono tracking-wider mb-4">
+          {String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
         </div>
-
-        <div className="bg-slate-950 border border-slate-800 rounded-xl p-4">
-          <div className="flex items-start">
-            <Lightbulb className="w-5 h-5 text-amber-400 mr-3 flex-shrink-0 mt-0.5" />
-            <div>
-              <p className="text-xs font-bold text-amber-400 mb-1 uppercase tracking-wider">Mentor Insight</p>
-              <p className="text-sm text-slate-300">
-                {hasCourses 
-                  ? `"You have a solid grasp of ${latestCourse}. Try to focus on applying it in real-world scenarios!"` 
-                  : `"Upload a document to get personalized insights on your learning style!"`}
-              </p>
-            </div>
-          </div>
+        <div className="flex justify-center space-x-3">
+          <button 
+            onClick={toggleTimer}
+            className={`px-4 py-2 rounded-lg text-sm font-bold flex items-center transition-colors ${isActive ? 'bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 border border-amber-500/20' : 'bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 border border-emerald-500/20'}`}
+          >
+            {isActive ? <Pause className="w-4 h-4 mr-1" /> : <Play className="w-4 h-4 mr-1" />}
+            {isActive ? 'Pause' : 'Start'}
+          </button>
+          <button 
+            onClick={resetTimer}
+            className="px-4 py-2 rounded-lg text-sm font-bold flex items-center bg-slate-800 text-slate-300 hover:bg-slate-700 transition-colors"
+          >
+            <StopCircle className="w-4 h-4 mr-1" />
+            Reset
+          </button>
         </div>
       </div>
     </div>
   );
 };
 
-const ResourcesWidget: React.FC<{ userId: number, courses: Course[] }> = ({ userId, courses }) => {
+const QuickLookupWidget = () => {
+  const [query, setQuery] = useState("");
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!query.trim()) return;
+    window.open(`https://vi.wikipedia.org/wiki/Special:Search?search=${encodeURIComponent(query)}`, '_blank');
+  };
+
+  return (
+    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="font-bold text-white flex items-center">
+          <Search className="w-5 h-5 mr-2 text-emerald-500" />
+          Quick Lookup
+        </h3>
+      </div>
+      <form onSubmit={handleSearch} className="relative">
+        <input 
+          type="text"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Enter a term to search Wikipedia..."
+          className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 pl-4 pr-10 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 transition-shadow"
+        />
+        <button type="submit" className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-emerald-400 transition-colors">
+          <Search className="w-4 h-4" />
+        </button>
+      </form>
+    </div>
+  );
+};
+
+const AchievementsWidget: React.FC<{ courses: Course[] }> = ({ courses }) => {
+  // Mock logic: give a badge for every course that has progress > 0
+  const startedCourses = courses.filter(c => c.currentStepIndex && c.currentStepIndex > 0);
+
+  return (
+    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="font-bold text-white flex items-center">
+          <Trophy className="w-5 h-5 mr-2 text-emerald-500" />
+          Achievements
+        </h3>
+      </div>
+      
+      {startedCourses.length === 0 ? (
+        <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 text-center">
+          <p className="text-sm text-slate-400">Start learning a course to earn your first badge!</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {startedCourses.map((c, idx) => (
+            <div key={idx} className="bg-slate-950 border border-emerald-500/30 rounded-xl p-3 flex items-center relative overflow-hidden group">
+              <div className="absolute right-0 top-0 w-16 h-full bg-emerald-500/5 -skew-x-12 translate-x-8 group-hover:translate-x-2 transition-transform duration-500"></div>
+              <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center mr-3 flex-shrink-0 border border-emerald-500/20">
+                <Medal className="w-5 h-5 text-emerald-400" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h4 className="text-sm font-bold text-emerald-400 truncate">{c.title}</h4>
+                <p className="text-xs text-slate-400">Progress Started</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const NotesWidget: React.FC<{ userId: number }> = ({ userId }) => {
   const [notes, setNotes] = useState("");
   const [isSaving, setIsSaving] = useState(false);
-
-  const hasCourses = courses.length > 0;
-  const latestCourse = hasCourses ? courses[courses.length - 1].title : "General Programming";
 
   useEffect(() => {
     fetch(`http://localhost:8080/api/users/${userId}`)
@@ -83,50 +169,18 @@ const ResourcesWidget: React.FC<{ userId: number, courses: Course[] }> = ({ user
       <div className="flex items-center justify-between mb-4">
         <h3 className="font-bold text-white flex items-center">
           <FileText className="w-5 h-5 mr-2 text-emerald-500" />
-          Quick Resources
+          Pinned Notes
         </h3>
       </div>
-      
-      <div className="space-y-3">
-        <a 
-          href={`https://www.google.com/search?q=${encodeURIComponent(latestCourse + ' cheat sheet')}`}
-          target="_blank" 
-          rel="noopener noreferrer"
-          className="group cursor-pointer bg-slate-950 border border-slate-800 rounded-xl p-3 flex items-center hover:border-emerald-500/30 transition-colors block"
-        >
-          <Code2 className="w-5 h-5 text-slate-400 group-hover:text-emerald-400 mr-3 transition-colors" />
-          <div className="flex-1">
-            <h4 className="text-sm font-semibold text-slate-200 group-hover:text-white transition-colors">{latestCourse} Cheat Sheet</h4>
-            <p className="text-xs text-slate-500">Quick Reference Guide</p>
-          </div>
-        </a>
-
-        <a 
-          href={`https://www.google.com/search?q=${encodeURIComponent(latestCourse + ' documentation tutorial')}`}
-          target="_blank" 
-          rel="noopener noreferrer"
-          className="group cursor-pointer bg-slate-950 border border-slate-800 rounded-xl p-3 flex items-center hover:border-emerald-500/30 transition-colors block"
-        >
-          <ExternalLink className="w-5 h-5 text-slate-400 group-hover:text-emerald-400 mr-3 transition-colors" />
-          <div className="flex-1">
-            <h4 className="text-sm font-semibold text-slate-200 group-hover:text-white transition-colors">Documentation</h4>
-            <p className="text-xs text-slate-500">Official Guides & Tutorials</p>
-          </div>
-        </a>
-
-        <div className="mt-4 pt-4 border-t border-slate-800">
-          <p className="text-xs font-bold text-slate-400 mb-2 uppercase tracking-wider flex items-center justify-between">
-            <span>Pinned Notes</span>
-            {isSaving && <span className="text-emerald-500 text-[10px] normal-case animate-pulse">Saving...</span>}
-          </p>
-          <textarea 
-            value={notes}
-            onChange={handleNotesChange}
-            className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-slate-300 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 resize-none h-24"
-            placeholder="Jot down quick ideas or code snippets here..."
-            spellCheck="false"
-          ></textarea>
-        </div>
+      <div className="relative">
+        {isSaving && <div className="absolute right-2 top-2 text-emerald-500 text-[10px] font-bold uppercase animate-pulse">Saving...</div>}
+        <textarea 
+          value={notes}
+          onChange={handleNotesChange}
+          className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-slate-300 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 resize-none h-32"
+          placeholder="Jot down quick ideas or notes here..."
+          spellCheck="false"
+        ></textarea>
       </div>
     </div>
   );
@@ -287,8 +341,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
           {/* RIGHT COLUMN: 1/3 SIDEBAR */}
           <div className="lg:col-span-1 space-y-6">
-            <AiRecommendationsWidget courses={courses} />
-            <ResourcesWidget userId={user.id} courses={courses} />
+            <PomodoroWidget />
+            <QuickLookupWidget />
+            <AchievementsWidget courses={courses} />
+            <NotesWidget userId={user.id} />
           </div>
 
         </div>

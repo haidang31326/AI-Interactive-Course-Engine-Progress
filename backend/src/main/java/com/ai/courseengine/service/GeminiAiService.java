@@ -92,6 +92,9 @@ public class GeminiAiService {
                 jsonOutput = jsonOutput.replaceAll("\"\\s+\\{", "\", {"); // Fix missing comma before object
                 jsonOutput = jsonOutput.replaceAll("\\}\\s+\"", "}, \""); // Fix missing comma before string
                 
+                // Fix unescaped double quotes in C# string interpolation (e.g., $"")
+                jsonOutput = jsonOutput.replace("$\"\"", "$\\\"\\\"");
+                
                 try {
                     return objectMapper.readValue(jsonOutput, new TypeReference<List<Block>>() {});
                 } catch (Exception e) {
@@ -135,7 +138,9 @@ public class GeminiAiService {
             - If the raw text is about programming, you MUST include 'interactive_code_editor' blocks.
             - The lesson MUST alternate logically, but heavily weight towards interactive practice.
             - CRITICAL: Output MUST be 100% valid, strictly parsable JSON. ALWAYS use double quotes for strings and keys. NEVER use backticks (`) or single quotes for JSON keys or values.
-            - CRITICAL: NEVER hallucinate dead URLs. The 'referenceLink' MUST ALWAYS be a valid Google Search URL formatted like: 'https://www.google.com/search?q=Your+Search+Query'. This ensures the user always gets the latest and valid knowledge.
+            - For 'referenceLink', YOU MUST provide a valid Google Search URL in this EXACT format: 'https://www.google.com/search?q=search+terms+here'. NEVER hallucinate dead URLs.
+            - CRITICAL JSON RULE: NEVER use unescaped double quotes (") inside any string value (like in hints, content, or problemStatement). If you need to quote something, use single quotes (') or properly escape it (\"). DO NOT use patterns like $"\" inside strings, use $\"\" instead.
+            - Return a JSON array of Block objects.
             
             RAW TEXT TO PROCESS:
             """ + rawText;

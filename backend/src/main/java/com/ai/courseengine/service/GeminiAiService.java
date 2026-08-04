@@ -28,7 +28,9 @@ public class GeminiAiService {
 
     public GeminiAiService(ObjectMapper objectMapper) {
         this.restTemplate = new RestTemplate();
-        this.objectMapper = objectMapper;
+        this.objectMapper = objectMapper.copy()
+            .configure(com.fasterxml.jackson.core.JsonParser.Feature.ALLOW_BACKSLASH_ESCAPING_ANY_CHARACTER, true)
+            .configure(com.fasterxml.jackson.core.JsonParser.Feature.ALLOW_UNQUOTED_CONTROL_CHARS, true);
     }
 
     public List<Block> generateLessonBlocks(String rawText) {

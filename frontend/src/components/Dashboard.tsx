@@ -40,7 +40,35 @@ const AiRecommendationsWidget = () => {
   );
 };
 
-const ResourcesWidget = () => {
+const ResourcesWidget: React.FC<{ userId: number }> = ({ userId }) => {
+  const [notes, setNotes] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    fetch(`http://localhost:8080/api/users/${userId}`)
+      .then(res => res.json())
+      .then(data => setNotes(data.pinnedNotes || ""))
+      .catch(err => console.error(err));
+  }, [userId]);
+
+  const handleNotesChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setNotes(e.target.value);
+    setIsSaving(true);
+  };
+
+  useEffect(() => {
+    if (!isSaving) return;
+    const timeoutId = setTimeout(() => {
+      fetch(`http://localhost:8080/api/users/${userId}/notes`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ notes })
+      }).then(() => setIsSaving(false))
+        .catch(err => console.error(err));
+    }, 1000);
+    return () => clearTimeout(timeoutId);
+  }, [notes, isSaving, userId]);
+
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
       <div className="flex items-center justify-between mb-4">
@@ -68,10 +96,13 @@ const ResourcesWidget = () => {
         </div>
 
         <div className="mt-4 pt-4 border-t border-slate-800">
-          <p className="text-xs font-bold text-slate-400 mb-2 uppercase tracking-wider flex items-center">
-            Pinned Notes
+          <p className="text-xs font-bold text-slate-400 mb-2 uppercase tracking-wider flex items-center justify-between">
+            <span>Pinned Notes</span>
+            {isSaving && <span className="text-emerald-500 text-[10px] normal-case animate-pulse">Saving...</span>}
           </p>
           <textarea 
+            value={notes}
+            onChange={handleNotesChange}
             className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-slate-300 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 resize-none h-24"
             placeholder="Jot down quick ideas or code snippets here..."
             spellCheck="false"
@@ -238,7 +269,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
           {/* RIGHT COLUMN: 1/3 SIDEBAR */}
           <div className="lg:col-span-1 space-y-6">
             <AiRecommendationsWidget />
-            <ResourcesWidget />
+            <ResourcesWidget userId={user.id} />
           </div>
 
         </div>

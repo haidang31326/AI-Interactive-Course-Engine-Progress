@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import type { Course, User } from '../types';
-import { LogOut, Plus, Play, BookOpen, Loader2, FileText, Timer, Search, Trophy, Medal, Pause, StopCircle } from 'lucide-react';
+import { LogOut, Plus, Play, BookOpen, Loader2, FileText, Search, Trophy, Medal } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 // --- SIDEBAR WIDGETS ---

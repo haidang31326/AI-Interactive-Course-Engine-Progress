@@ -12,6 +12,18 @@ const FillBlankPane: React.FC<Props> = ({ block, onSuccess }) => {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [hasError, setHasError] = useState(false);
   const [showHint, setShowHint] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
+  const [showFeedback, setShowFeedback] = useState(false);
+
+  const isFuzzyMatch = (input: string, target: string) => {
+    if (!input || !target) return false;
+    const a = input.trim().toLowerCase().replace(/[.,!?;:"']/g, '');
+    const b = target.trim().toLowerCase().replace(/[.,!?;:"']/g, '');
+    if (a === b) return true;
+    if (a.length > 3 && b.includes(a)) return true;
+    if (b.length > 3 && a.includes(b)) return true;
+    return false;
+  };
 
   const handleChange = (key: string, value: string) => {
     setAnswers({ ...answers, [key]: value });
@@ -21,23 +33,34 @@ const FillBlankPane: React.FC<Props> = ({ block, onSuccess }) => {
   const handleSubmit = () => {
     let correct = true;
     for (const key of Object.keys(block.correctAnswers)) {
-      if (answers[key]?.trim().toLowerCase() !== block.correctAnswers[key].toLowerCase()) {
+      if (!isFuzzyMatch(answers[key] || '', block.correctAnswers[key])) {
         correct = false;
         break;
       }
     }
 
+    setShowFeedback(true);
     if (correct) {
+      setIsSuccess(true);
       confetti({
         particleCount: 100,
         spread: 70,
         origin: { y: 0.6 }
       });
-      onSuccess();
+      setTimeout(onSuccess, 2000);
     } else {
       setHasError(true);
       setShowHint(true);
     }
+  };
+
+  const handleShowAnswer = () => {
+    setAnswers(block.correctAnswers);
+    setHasError(false);
+    setShowHint(false);
+    setShowFeedback(true);
+    setIsSuccess(true);
+    setTimeout(onSuccess, 2000);
   };
 
   // Replace {1} with input fields
@@ -110,13 +133,23 @@ const FillBlankPane: React.FC<Props> = ({ block, onSuccess }) => {
           </motion.div>
         )}
 
-        <div className="pt-8">
-          <button
-            onClick={handleSubmit}
-            className="px-8 py-3 bg-indigo-600 text-white rounded-full font-semibold hover:bg-indigo-700 shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1"
-          >
-            Submit Answer
-          </button>
+        <div className="pt-8 space-x-4">
+          {!isSuccess && (
+            <>
+              <button
+                onClick={handleSubmit}
+                className="px-8 py-3 bg-indigo-600 text-white rounded-full font-semibold hover:bg-indigo-700 shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1"
+              >
+                Submit Answer
+              </button>
+              <button
+                onClick={handleShowAnswer}
+                className="px-8 py-3 bg-slate-200 text-slate-700 rounded-full font-semibold hover:bg-slate-300 shadow-md transition-all transform hover:-translate-y-1"
+              >
+                Show Answer
+              </button>
+            </>
+          )}
         </div>
       </div>
     </motion.div>

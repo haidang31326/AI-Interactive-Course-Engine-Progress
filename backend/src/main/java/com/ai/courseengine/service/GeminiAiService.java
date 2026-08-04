@@ -30,7 +30,9 @@ public class GeminiAiService {
         this.restTemplate = new RestTemplate();
         this.objectMapper = objectMapper.copy()
             .configure(com.fasterxml.jackson.core.JsonParser.Feature.ALLOW_BACKSLASH_ESCAPING_ANY_CHARACTER, true)
-            .configure(com.fasterxml.jackson.core.JsonParser.Feature.ALLOW_UNQUOTED_CONTROL_CHARS, true);
+            .configure(com.fasterxml.jackson.core.JsonParser.Feature.ALLOW_UNQUOTED_CONTROL_CHARS, true)
+            .configure(com.fasterxml.jackson.core.JsonParser.Feature.ALLOW_UNQUOTED_FIELD_NAMES, true)
+            .configure(com.fasterxml.jackson.core.JsonParser.Feature.ALLOW_SINGLE_QUOTES, true);
     }
 
     public List<Block> generateLessonBlocks(String rawText) {
@@ -72,7 +74,17 @@ public class GeminiAiService {
             GeminiResponse response = restTemplate.postForObject(apiUrl + "?key=" + apiKey, entity, GeminiResponse.class);
 
             if (response != null && response.getCandidates() != null && !response.getCandidates().isEmpty()) {
-                String jsonOutput = response.getCandidates().get(0).getContent().getParts().get(0).getText();
+                String jsonOutput = response.getCandidates().get(0).getContent().getParts().get(0).getText().trim();
+                if (jsonOutput.startsWith("```json")) {
+                    jsonOutput = jsonOutput.substring(7);
+                } else if (jsonOutput.startsWith("```")) {
+                    jsonOutput = jsonOutput.substring(3);
+                }
+                if (jsonOutput.endsWith("```")) {
+                    jsonOutput = jsonOutput.substring(0, jsonOutput.length() - 3);
+                }
+                jsonOutput = jsonOutput.trim();
+                
                 return objectMapper.readValue(jsonOutput, new TypeReference<List<Block>>() {});
             }
         } catch (Exception e) {
@@ -103,8 +115,9 @@ public class GeminiAiService {
             
             RULES:
             - You MUST generate a rich, comprehensive course. 
-            - For EVERY theory block, you MUST generate AT LEAST 3 to 5 interactive blocks (mixing fill-in-the-blanks and scenarios) to thoroughly test the user's understanding of that specific theory. Do NOT just generate 1 exercise per theory.
+            - For EVERY theory block, you MUST generate AT LEAST 3 to 5 interactive blocks (mixing fill-in-the-blanks and scenarios).
             - The lesson MUST alternate logically, but heavily weight towards interactive practice.
+            - CRITICAL: Output MUST be 100% valid, strictly parsable JSON. ALWAYS use double quotes for strings and keys. NEVER use backticks (`) or single quotes for JSON keys or values.
             - Extract key information from the raw text provided below.
             
             RAW TEXT TO PROCESS:

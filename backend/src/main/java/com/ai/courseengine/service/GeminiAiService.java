@@ -85,6 +85,13 @@ public class GeminiAiService {
                 }
                 jsonOutput = jsonOutput.trim();
                 
+                // Extremely robust fixes for AI hallucinated missing commas
+                jsonOutput = jsonOutput.replaceAll("\"\\s+\"", "\", \""); // Fix missing comma between strings
+                jsonOutput = jsonOutput.replaceAll("\\}\\s+\\{", "}, {"); // Fix missing comma between objects
+                jsonOutput = jsonOutput.replaceAll("]\\s+\\[", "], ["); // Fix missing comma between arrays
+                jsonOutput = jsonOutput.replaceAll("\"\\s+\\{", "\", {"); // Fix missing comma before object
+                jsonOutput = jsonOutput.replaceAll("\\}\\s+\"", "}, \""); // Fix missing comma before string
+                
                 return objectMapper.readValue(jsonOutput, new TypeReference<List<Block>>() {});
             }
         } catch (Exception e) {

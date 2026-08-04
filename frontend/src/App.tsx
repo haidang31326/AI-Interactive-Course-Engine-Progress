@@ -9,6 +9,7 @@ import type { TheoryBlock, FillBlankBlock, ScenarioBlock, CodeBlock, Block, User
 import { BookOpen, UploadCloud, Loader2, ArrowLeft } from 'lucide-react';
 import { AuthPane } from './components/AuthPane';
 import { Dashboard } from './components/Dashboard';
+import { GlobalPomodoro } from './components/GlobalPomodoro';
 
 const API_BASE = 'http://localhost:8080/api/courses';
 
@@ -161,22 +162,23 @@ function App() {
     }
   };
 
-  if (appState === 'AUTH') {
-    return <AuthPane onLoginSuccess={handleLoginSuccess} />;
-  }
+  const renderContent = () => {
+    if (appState === 'AUTH') {
+      return <AuthPane onLoginSuccess={handleLoginSuccess} />;
+    }
 
-  if (appState === 'DASHBOARD' && user) {
-    return (
-      <Dashboard
-        user={user}
-        onLogout={handleLogout}
-        onCreateNew={handleCreateNew}
-        onResumeCourse={handleResumeCourse}
-      />
-    );
-  }
+    if (appState === 'DASHBOARD' && user) {
+      return (
+        <Dashboard
+          user={user}
+          onLogout={handleLogout}
+          onCreateNew={handleCreateNew}
+          onResumeCourse={handleResumeCourse}
+        />
+      );
+    }
 
-  if (appState === 'COURSE_CREATE') {
+    if (appState === 'COURSE_CREATE') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 font-sans relative">
         <button
@@ -243,10 +245,10 @@ function App() {
           </form>
         </motion.div>
       </div>
-    );
-  }
+      );
+    }
 
-  if (appState === 'COURSE_PLAYER' && blocks.length > 0) {
+    if (appState === 'COURSE_PLAYER' && blocks.length > 0) {
     const theoryBlock = getLatestTheoryBlock();
     const isInteractiveNow = currentBlock.type !== 'theory_markdown';
 
@@ -359,11 +361,18 @@ function App() {
           )}
         </footer>
       </div>
-    );
-  }
+      );
+    }
 
-  // Fallback
-  return null;
+    return null;
+  };
+
+  return (
+    <>
+      {renderContent()}
+      {user && appState !== 'AUTH' && <GlobalPomodoro />}
+    </>
+  );
 }
 
 export default App;

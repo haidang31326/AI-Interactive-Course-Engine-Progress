@@ -5,73 +5,13 @@ import { motion } from 'framer-motion';
 
 // --- SIDEBAR WIDGETS ---
 
-const PomodoroWidget = () => {
-  const [timeLeft, setTimeLeft] = useState(25 * 60);
-  const [isActive, setIsActive] = useState(false);
-
-  useEffect(() => {
-    let interval: ReturnType<typeof setInterval> | null = null;
-    if (isActive && timeLeft > 0) {
-      interval = setInterval(() => {
-        setTimeLeft((time) => time - 1);
-      }, 1000);
-    } else if (timeLeft === 0) {
-      setIsActive(false);
-    }
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [isActive, timeLeft]);
-
-  const toggleTimer = () => setIsActive(!isActive);
-  const resetTimer = () => {
-    setIsActive(false);
-    setTimeLeft(25 * 60);
-  };
-
-  const minutes = Math.floor(timeLeft / 60);
-  const seconds = timeLeft % 60;
-
-  return (
-    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="font-bold text-white flex items-center">
-          <Timer className="w-5 h-5 mr-2 text-emerald-500" />
-          Focus Timer
-        </h3>
-      </div>
-      <div className="bg-slate-950 border border-slate-800 rounded-xl p-6 text-center">
-        <div className="text-4xl font-black text-emerald-400 font-mono tracking-wider mb-4">
-          {String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
-        </div>
-        <div className="flex justify-center space-x-3">
-          <button 
-            onClick={toggleTimer}
-            className={`px-4 py-2 rounded-lg text-sm font-bold flex items-center transition-colors ${isActive ? 'bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 border border-amber-500/20' : 'bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 border border-emerald-500/20'}`}
-          >
-            {isActive ? <Pause className="w-4 h-4 mr-1" /> : <Play className="w-4 h-4 mr-1" />}
-            {isActive ? 'Pause' : 'Start'}
-          </button>
-          <button 
-            onClick={resetTimer}
-            className="px-4 py-2 rounded-lg text-sm font-bold flex items-center bg-slate-800 text-slate-300 hover:bg-slate-700 transition-colors"
-          >
-            <StopCircle className="w-4 h-4 mr-1" />
-            Reset
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
 const QuickLookupWidget = () => {
   const [query, setQuery] = useState("");
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (!query.trim()) return;
-    window.open(`https://vi.wikipedia.org/wiki/Special:Search?search=${encodeURIComponent(query)}`, '_blank');
+    window.open(`https://www.google.com/search?q=${encodeURIComponent(query)}`, '_blank');
   };
 
   return (
@@ -341,7 +281,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
           {/* RIGHT COLUMN: 1/3 SIDEBAR */}
           <div className="lg:col-span-1 space-y-6">
-            <PomodoroWidget />
             <QuickLookupWidget />
             <AchievementsWidget courses={courses} />
             <NotesWidget userId={user.id} />

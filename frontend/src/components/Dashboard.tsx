@@ -1,106 +1,81 @@
 import React, { useEffect, useState } from 'react';
 import type { Course, User } from '../types';
-import { LogOut, Plus, Play, BookOpen, Loader2, Calendar, BrainCircuit, BarChart3 } from 'lucide-react';
+import { LogOut, Plus, Play, BookOpen, Loader2, Lightbulb, Sparkles, Code2, FileText, ExternalLink } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 // --- SIDEBAR WIDGETS ---
 
-const HeatmapWidget = () => {
-  // Mock data for heatmap (7 columns x 5 rows approx)
-  const generateSquares = () => {
-    return Array.from({ length: 35 }).map((_, i) => {
-      const level = Math.floor(Math.random() * 4); // 0 to 3
-      const colors = ['bg-slate-800', 'bg-emerald-900', 'bg-emerald-600', 'bg-emerald-400'];
-      return (
-        <div key={i} className={`w-3 h-3 rounded-sm ${colors[level]} transition-colors duration-300 hover:ring-2 hover:ring-emerald-500`}></div>
-      );
-    });
-  };
-
+const AiRecommendationsWidget = () => {
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
       <div className="flex items-center justify-between mb-4">
         <h3 className="font-bold text-white flex items-center">
-          <Calendar className="w-5 h-5 mr-2 text-emerald-500" />
-          Activity Streak
-        </h3>
-      </div>
-      <p className="text-sm font-medium text-slate-400 mb-4">Current Streak: <span className="text-emerald-400 font-bold">12 Days</span> 🔥</p>
-      <div className="grid grid-cols-7 gap-1.5">
-        {generateSquares()}
-      </div>
-    </div>
-  );
-};
-
-const ReviewWidget = () => {
-  const [showAnswer, setShowAnswer] = useState(false);
-
-  return (
-    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="font-bold text-white flex items-center">
-          <BrainCircuit className="w-5 h-5 mr-2 text-emerald-500" />
-          Spaced Repetition
+          <Sparkles className="w-5 h-5 mr-2 text-emerald-500" />
+          AI Recommendations
         </h3>
       </div>
       
-      <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 mb-4">
-        <p className="text-sm text-slate-300 mb-2">What keyword is used to inherit a class in C#?</p>
-        {showAnswer ? (
-          <div className="mt-4 pt-4 border-t border-slate-800 text-emerald-400 font-mono font-bold">
-            : (colon)
-          </div>
-        ) : (
-          <button 
-            onClick={() => setShowAnswer(true)}
-            className="text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 py-1.5 px-3 rounded-lg w-full mt-2 transition-colors"
-          >
-            Show Answer
+      <div className="space-y-4">
+        <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 relative overflow-hidden group">
+          <div className="absolute top-0 right-0 w-16 h-16 bg-emerald-500/10 rounded-bl-full -mr-8 -mt-8 transition-transform group-hover:scale-150"></div>
+          <p className="text-xs font-bold text-emerald-400 mb-1 uppercase tracking-wider">Up Next</p>
+          <h4 className="text-white font-semibold mb-2">Advanced C# Patterns</h4>
+          <p className="text-sm text-slate-400 mb-4">Based on your recent activity, this is the logical next step.</p>
+          <button className="text-xs font-bold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 py-1.5 px-3 rounded-lg transition-colors border border-emerald-500/20">
+            Generate Course
           </button>
-        )}
-      </div>
-
-      {showAnswer && (
-        <div className="flex space-x-2">
-          <button onClick={() => setShowAnswer(false)} className="flex-1 py-2 text-xs font-bold rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors border border-red-500/20">Hard</button>
-          <button onClick={() => setShowAnswer(false)} className="flex-1 py-2 text-xs font-bold rounded-lg bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 transition-colors border border-amber-500/20">Good</button>
-          <button onClick={() => setShowAnswer(false)} className="flex-1 py-2 text-xs font-bold rounded-lg bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 transition-colors border border-emerald-500/20">Easy</button>
         </div>
-      )}
+
+        <div className="bg-slate-950 border border-slate-800 rounded-xl p-4">
+          <div className="flex items-start">
+            <Lightbulb className="w-5 h-5 text-amber-400 mr-3 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-xs font-bold text-amber-400 mb-1 uppercase tracking-wider">Mentor Insight</p>
+              <p className="text-sm text-slate-300">"You have a solid grasp of theory. Try to focus on writing code faster in the interactive editor!"</p>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
 
-const StatsWidget = () => {
+const ResourcesWidget = () => {
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4">
         <h3 className="font-bold text-white flex items-center">
-          <BarChart3 className="w-5 h-5 mr-2 text-emerald-500" />
-          Knowledge Distribution
+          <FileText className="w-5 h-5 mr-2 text-emerald-500" />
+          Quick Resources
         </h3>
       </div>
-
-      <div className="space-y-4">
-        <div>
-          <div className="flex justify-between text-xs font-bold mb-1.5">
-            <span className="text-emerald-400">Technical (Code)</span>
-            <span className="text-emerald-500">70%</span>
-          </div>
-          <div className="w-full bg-slate-950 rounded-full h-2">
-            <div className="bg-emerald-500 h-2 rounded-full" style={{ width: '70%' }}></div>
+      
+      <div className="space-y-3">
+        <div className="group cursor-pointer bg-slate-950 border border-slate-800 rounded-xl p-3 flex items-center hover:border-emerald-500/30 transition-colors">
+          <Code2 className="w-5 h-5 text-slate-400 group-hover:text-emerald-400 mr-3 transition-colors" />
+          <div className="flex-1">
+            <h4 className="text-sm font-semibold text-slate-200 group-hover:text-white transition-colors">C# Cheat Sheet</h4>
+            <p className="text-xs text-slate-500">Syntax, LINQ, Loops</p>
           </div>
         </div>
 
-        <div>
-          <div className="flex justify-between text-xs font-bold mb-1.5">
-            <span className="text-purple-400">Theory (Concepts)</span>
-            <span className="text-purple-500">30%</span>
+        <div className="group cursor-pointer bg-slate-950 border border-slate-800 rounded-xl p-3 flex items-center hover:border-emerald-500/30 transition-colors">
+          <ExternalLink className="w-5 h-5 text-slate-400 group-hover:text-emerald-400 mr-3 transition-colors" />
+          <div className="flex-1">
+            <h4 className="text-sm font-semibold text-slate-200 group-hover:text-white transition-colors">Microsoft Learn</h4>
+            <p className="text-xs text-slate-500">Official Documentation</p>
           </div>
-          <div className="w-full bg-slate-950 rounded-full h-2">
-            <div className="bg-purple-500 h-2 rounded-full" style={{ width: '30%' }}></div>
-          </div>
+        </div>
+
+        <div className="mt-4 pt-4 border-t border-slate-800">
+          <p className="text-xs font-bold text-slate-400 mb-2 uppercase tracking-wider flex items-center">
+            Pinned Notes
+          </p>
+          <textarea 
+            className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-slate-300 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 resize-none h-24"
+            placeholder="Jot down quick ideas or code snippets here..."
+            spellCheck="false"
+          ></textarea>
         </div>
       </div>
     </div>
@@ -262,9 +237,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
           {/* RIGHT COLUMN: 1/3 SIDEBAR */}
           <div className="lg:col-span-1 space-y-6">
-            <HeatmapWidget />
-            <ReviewWidget />
-            <StatsWidget />
+            <AiRecommendationsWidget />
+            <ResourcesWidget />
           </div>
 
         </div>

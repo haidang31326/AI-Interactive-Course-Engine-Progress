@@ -1,0 +1,7 @@
+target
+.mvn
+!mvnw
+!.mvn/wrapper
+*.log
+.git
+.env

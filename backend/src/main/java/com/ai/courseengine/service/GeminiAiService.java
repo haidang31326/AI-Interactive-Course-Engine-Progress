@@ -44,6 +44,20 @@ public class GeminiAiService {
                 .generationConfig(GeminiRequest.GenerationConfig.builder()
                         .responseMimeType("application/json")
                         .build())
+                .safetySettings(List.of(
+                        GeminiRequest.SafetySetting.builder()
+                                .category("HARM_CATEGORY_HATE_SPEECH")
+                                .threshold("BLOCK_LOW_AND_ABOVE").build(),
+                        GeminiRequest.SafetySetting.builder()
+                                .category("HARM_CATEGORY_DANGEROUS_CONTENT")
+                                .threshold("BLOCK_LOW_AND_ABOVE").build(),
+                        GeminiRequest.SafetySetting.builder()
+                                .category("HARM_CATEGORY_SEXUALLY_EXPLICIT")
+                                .threshold("BLOCK_LOW_AND_ABOVE").build(),
+                        GeminiRequest.SafetySetting.builder()
+                                .category("HARM_CATEGORY_HARASSMENT")
+                                .threshold("BLOCK_LOW_AND_ABOVE").build()
+                ))
                 .build();
 
         HttpHeaders headers = new HttpHeaders();

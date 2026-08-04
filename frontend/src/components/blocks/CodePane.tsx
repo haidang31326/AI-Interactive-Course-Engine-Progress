@@ -52,7 +52,7 @@ const CodePane: React.FC<Props> = ({ block, onSuccess }) => {
       className="flex flex-col h-full p-8 bg-slate-900 rounded-3xl shadow-xl border border-slate-700"
     >
       <div className="w-full flex-grow flex flex-col space-y-6">
-        <h2 className="text-2xl font-bold text-slate-100">Coding Challenge 👨‍💻</h2>
+        <h2 className="text-2xl font-bold text-slate-100">Coding Challenge</h2>
         
         <div className="bg-slate-800 p-6 rounded-xl border border-slate-700">
           <p className="text-slate-300 text-lg leading-relaxed">{block.problemStatement}</p>
@@ -65,7 +65,7 @@ const CodePane: React.FC<Props> = ({ block, onSuccess }) => {
           <textarea
             value={code}
             onChange={(e) => setCode(e.target.value)}
-            className={`flex-grow w-full bg-slate-950 text-green-400 p-6 pt-10 rounded-xl font-mono text-lg outline-none resize-none transition-colors border-2 ${
+            className={`flex-grow w-full h-full min-h-[300px] bg-slate-950 text-green-400 p-6 pt-10 rounded-xl font-mono text-lg outline-none resize-none transition-colors border-2 ${
               hasError ? 'border-red-500/50' : isSuccess ? 'border-green-500/50' : 'border-slate-800 focus:border-indigo-500/50'
             }`}
             spellCheck="false"
@@ -78,7 +78,7 @@ const CodePane: React.FC<Props> = ({ block, onSuccess }) => {
             animate={{ opacity: 1, y: 0 }}
             className="text-amber-400 bg-amber-400/10 p-4 rounded-xl"
           >
-            💡 <strong>Hint:</strong> {block.hints[0]}
+            <strong>Hint:</strong> {block.hints[0]}
           </motion.div>
         )}
 
@@ -88,7 +88,7 @@ const CodePane: React.FC<Props> = ({ block, onSuccess }) => {
             animate={{ opacity: 1, y: 0 }}
             className={`p-4 rounded-xl font-medium ${isSuccess ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}
           >
-            {isSuccess ? 'Awesome code! Tests passed. 🚀' : 'Hmm, that doesn\'t look quite right. Keep trying!'}
+            {isSuccess ? 'Awesome code! Tests passed.' : 'Hmm, that doesn\'t look quite right. Keep trying!'}
             
             {isSuccess && block.referenceLink && (
               <div className="mt-4 pt-4 border-t border-green-500/30">

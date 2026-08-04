@@ -8,10 +8,15 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
     include = JsonTypeInfo.As.PROPERTY,
     property = "type"
 )
+@com.fasterxml.jackson.annotation.JsonIgnoreProperties(ignoreUnknown = true)
 @JsonSubTypes({
     @JsonSubTypes.Type(value = TheoryBlock.class, name = "theory_markdown"),
+    @JsonSubTypes.Type(value = TheoryBlock.class, name = "theory"),
     @JsonSubTypes.Type(value = FillBlankBlock.class, name = "interactive_fill_blank"),
-    @JsonSubTypes.Type(value = ScenarioBlock.class, name = "interactive_scenario")
+    @JsonSubTypes.Type(value = FillBlankBlock.class, name = "fill_blank"),
+    @JsonSubTypes.Type(value = FillBlankBlock.class, name = "fill_in_the_blank"),
+    @JsonSubTypes.Type(value = ScenarioBlock.class, name = "interactive_scenario"),
+    @JsonSubTypes.Type(value = ScenarioBlock.class, name = "scenario")
 })
 public interface Block {
 }

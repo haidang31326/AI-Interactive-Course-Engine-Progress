@@ -22,6 +22,7 @@ function App() {
   const [currentCourse, setCurrentCourse] = useState<Course | null>(null);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [canProceed, setCanProceed] = useState(true);
+  const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
   const [isLoading, setIsLoading] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState('');
@@ -62,18 +63,26 @@ function App() {
     }
     setCurrentCourse(course);
     setCurrentStepIndex(course.currentStepIndex || 0);
+    
+    // Assume all previous steps are completed if we resume at a specific index
+    const previouslyCompleted = new Set<number>();
+    for (let i = 0; i < (course.currentStepIndex || 0); i++) {
+      previouslyCompleted.add(i);
+    }
+    setCompletedSteps(previouslyCompleted);
+    
     setAppState('COURSE_PLAYER');
   };
 
   useEffect(() => {
     if (currentBlock) {
-      if (currentBlock.type !== 'theory_markdown') {
+      if (currentBlock.type !== 'theory_markdown' && !completedSteps.has(currentStepIndex)) {
         setCanProceed(false);
       } else {
         setCanProceed(true);
       }
     }
-  }, [currentStepIndex, currentBlock]);
+  }, [currentStepIndex, currentBlock, completedSteps]);
 
   const saveProgress = async (courseId: number, index: number) => {
     try {
@@ -105,6 +114,11 @@ function App() {
 
   const handleInteractiveSuccess = () => {
     setCanProceed(true);
+    setCompletedSteps(prev => {
+      const newSet = new Set(prev);
+      newSet.add(currentStepIndex);
+      return newSet;
+    });
   };
 
   const getLatestTheoryBlock = (): TheoryBlock | null => {
@@ -136,6 +150,7 @@ function App() {
       if (firstLesson && firstLesson.blocks) {
         setBlocks(firstLesson.blocks);
         setCurrentStepIndex(0);
+        setCompletedSteps(new Set());
         setAppState('COURSE_PLAYER');
       }
     } catch (error) {
@@ -267,29 +282,38 @@ function App() {
 
           {isInteractiveNow && (
             <div className="w-1/2 h-full p-8 border-l border-slate-200 bg-white overflow-y-auto">
-              <AnimatePresence mode="wait">
-                {currentBlock.type === 'interactive_fill_blank' && (
-                  <FillBlankPane 
-                    key={`interactive-${currentStepIndex}`}
-                    block={currentBlock as FillBlankBlock} 
-                    onSuccess={handleInteractiveSuccess} 
-                  />
-                )}
-                {currentBlock.type === 'interactive_scenario' && (
-                  <ScenarioPane 
-                    key={`scenario-${currentStepIndex}`}
-                    block={currentBlock as ScenarioBlock} 
-                    onSuccess={handleInteractiveSuccess} 
-                  />
-                )}
-                {currentBlock.type === 'interactive_code_editor' && (
-                  <CodePane 
-                    key={`code-${currentStepIndex}`}
-                    block={currentBlock as CodeBlock} 
-                    onSuccess={handleInteractiveSuccess} 
-                  />
-                )}
-              </AnimatePresence>
+              {blocks.map((b, index) => {
+                if (b.type === 'theory_markdown') return null;
+                const isVisible = index === currentStepIndex;
+                return (
+                  <div key={index} className={isVisible ? 'block h-full' : 'hidden'}>
+                    {b.type === 'interactive_fill_blank' && (
+                      <FillBlankPane 
+                        block={b as FillBlankBlock} 
+                        onSuccess={() => {
+                          if (index === currentStepIndex) handleInteractiveSuccess();
+                        }} 
+                      />
+                    )}
+                    {b.type === 'interactive_scenario' && (
+                      <ScenarioPane 
+                        block={b as ScenarioBlock} 
+                        onSuccess={() => {
+                          if (index === currentStepIndex) handleInteractiveSuccess();
+                        }} 
+                      />
+                    )}
+                    {b.type === 'interactive_code_editor' && (
+                      <CodePane 
+                        block={b as CodeBlock} 
+                        onSuccess={() => {
+                          if (index === currentStepIndex) handleInteractiveSuccess();
+                        }} 
+                      />
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
         </main>

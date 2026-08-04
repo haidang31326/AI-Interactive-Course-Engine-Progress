@@ -5,7 +5,12 @@ import { motion } from 'framer-motion';
 
 // --- SIDEBAR WIDGETS ---
 
-const AiRecommendationsWidget: React.FC<{ onCreateNew: () => void }> = ({ onCreateNew }) => {
+const AiRecommendationsWidget: React.FC<{ courses: Course[] }> = ({ courses }) => {
+  const hasCourses = courses.length > 0;
+  const latestCourse = hasCourses ? courses[courses.length - 1].title : null;
+  const upNextTitle = latestCourse ? `Advanced ${latestCourse}` : "Start Your First Course";
+  const upNextDesc = latestCourse ? "Based on your recent activity, this is the logical next step." : "Upload a PDF to let AI generate your first learning path.";
+
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
       <div className="flex items-center justify-between mb-4">
@@ -19,14 +24,8 @@ const AiRecommendationsWidget: React.FC<{ onCreateNew: () => void }> = ({ onCrea
         <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 relative overflow-hidden group">
           <div className="absolute top-0 right-0 w-16 h-16 bg-emerald-500/10 rounded-bl-full -mr-8 -mt-8 transition-transform group-hover:scale-150"></div>
           <p className="text-xs font-bold text-emerald-400 mb-1 uppercase tracking-wider">Up Next</p>
-          <h4 className="text-white font-semibold mb-2">Advanced C# Patterns</h4>
-          <p className="text-sm text-slate-400 mb-4">Based on your recent activity, this is the logical next step.</p>
-          <button 
-            onClick={onCreateNew}
-            className="text-xs font-bold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 py-1.5 px-3 rounded-lg transition-colors border border-emerald-500/20"
-          >
-            Generate Course
-          </button>
+          <h4 className="text-white font-semibold mb-2">{upNextTitle}</h4>
+          <p className="text-sm text-slate-400">{upNextDesc}</p>
         </div>
 
         <div className="bg-slate-950 border border-slate-800 rounded-xl p-4">
@@ -34,7 +33,11 @@ const AiRecommendationsWidget: React.FC<{ onCreateNew: () => void }> = ({ onCrea
             <Lightbulb className="w-5 h-5 text-amber-400 mr-3 flex-shrink-0 mt-0.5" />
             <div>
               <p className="text-xs font-bold text-amber-400 mb-1 uppercase tracking-wider">Mentor Insight</p>
-              <p className="text-sm text-slate-300">"You have a solid grasp of theory. Try to focus on writing code faster in the interactive editor!"</p>
+              <p className="text-sm text-slate-300">
+                {hasCourses 
+                  ? `"You have a solid grasp of ${latestCourse}. Try to focus on applying it in real-world scenarios!"` 
+                  : `"Upload a document to get personalized insights on your learning style!"`}
+              </p>
             </div>
           </div>
         </div>
@@ -43,9 +46,12 @@ const AiRecommendationsWidget: React.FC<{ onCreateNew: () => void }> = ({ onCrea
   );
 };
 
-const ResourcesWidget: React.FC<{ userId: number }> = ({ userId }) => {
+const ResourcesWidget: React.FC<{ userId: number, courses: Course[] }> = ({ userId, courses }) => {
   const [notes, setNotes] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+
+  const hasCourses = courses.length > 0;
+  const latestCourse = hasCourses ? courses[courses.length - 1].title : "General Programming";
 
   useEffect(() => {
     fetch(`http://localhost:8080/api/users/${userId}`)
@@ -83,28 +89,28 @@ const ResourcesWidget: React.FC<{ userId: number }> = ({ userId }) => {
       
       <div className="space-y-3">
         <a 
-          href="https://learn.microsoft.com/en-us/dotnet/csharp/tour-of-csharp/" 
+          href={`https://www.google.com/search?q=${encodeURIComponent(latestCourse + ' cheat sheet')}`}
           target="_blank" 
           rel="noopener noreferrer"
           className="group cursor-pointer bg-slate-950 border border-slate-800 rounded-xl p-3 flex items-center hover:border-emerald-500/30 transition-colors block"
         >
           <Code2 className="w-5 h-5 text-slate-400 group-hover:text-emerald-400 mr-3 transition-colors" />
           <div className="flex-1">
-            <h4 className="text-sm font-semibold text-slate-200 group-hover:text-white transition-colors">C# Cheat Sheet</h4>
-            <p className="text-xs text-slate-500">Syntax, LINQ, Loops</p>
+            <h4 className="text-sm font-semibold text-slate-200 group-hover:text-white transition-colors">{latestCourse} Cheat Sheet</h4>
+            <p className="text-xs text-slate-500">Quick Reference Guide</p>
           </div>
         </a>
 
         <a 
-          href="https://learn.microsoft.com/" 
+          href={`https://www.google.com/search?q=${encodeURIComponent(latestCourse + ' documentation tutorial')}`}
           target="_blank" 
           rel="noopener noreferrer"
           className="group cursor-pointer bg-slate-950 border border-slate-800 rounded-xl p-3 flex items-center hover:border-emerald-500/30 transition-colors block"
         >
           <ExternalLink className="w-5 h-5 text-slate-400 group-hover:text-emerald-400 mr-3 transition-colors" />
           <div className="flex-1">
-            <h4 className="text-sm font-semibold text-slate-200 group-hover:text-white transition-colors">Microsoft Learn</h4>
-            <p className="text-xs text-slate-500">Official Documentation</p>
+            <h4 className="text-sm font-semibold text-slate-200 group-hover:text-white transition-colors">Documentation</h4>
+            <p className="text-xs text-slate-500">Official Guides & Tutorials</p>
           </div>
         </a>
 
@@ -281,8 +287,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
           {/* RIGHT COLUMN: 1/3 SIDEBAR */}
           <div className="lg:col-span-1 space-y-6">
-            <AiRecommendationsWidget onCreateNew={onCreateNew} />
-            <ResourcesWidget userId={user.id} />
+            <AiRecommendationsWidget courses={courses} />
+            <ResourcesWidget userId={user.id} courses={courses} />
           </div>
 
         </div>

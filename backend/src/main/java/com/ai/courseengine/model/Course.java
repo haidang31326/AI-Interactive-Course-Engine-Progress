@@ -18,6 +18,10 @@ public class Course {
     @Column(columnDefinition = "TEXT")
     private String description;
 
+    private Long userId;
+    
+    private Integer currentStepIndex = 0;
+
     @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Lesson> lessons = new ArrayList<>();
 }

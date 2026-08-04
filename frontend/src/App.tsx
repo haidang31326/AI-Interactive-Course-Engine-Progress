@@ -5,13 +5,21 @@ import TheoryPane from './components/blocks/TheoryPane';
 import FillBlankPane from './components/blocks/FillBlankPane';
 import ScenarioPane from './components/blocks/ScenarioPane';
 import CodePane from './components/blocks/CodePane';
-import type { TheoryBlock, FillBlankBlock, ScenarioBlock, CodeBlock, Block } from './types';
-import { BookOpen, UploadCloud, Loader2 } from 'lucide-react';
+import type { TheoryBlock, FillBlankBlock, ScenarioBlock, CodeBlock, Block, User, Course } from './types';
+import { BookOpen, UploadCloud, Loader2, ArrowLeft } from 'lucide-react';
+import { AuthPane } from './components/AuthPane';
+import { Dashboard } from './components/Dashboard';
 
 const API_BASE = 'http://localhost:8080/api/courses';
 
+type AppState = 'AUTH' | 'DASHBOARD' | 'COURSE_PLAYER' | 'COURSE_CREATE';
+
 function App() {
+  const [appState, setAppState] = useState<AppState>('AUTH');
+  const [user, setUser] = useState<User | null>(null);
+
   const [blocks, setBlocks] = useState<Block[]>([]);
+  const [currentCourse, setCurrentCourse] = useState<Course | null>(null);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [canProceed, setCanProceed] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
@@ -19,6 +27,43 @@ function App() {
   const [title, setTitle] = useState('');
 
   const currentBlock = blocks[currentStepIndex];
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+      setAppState('DASHBOARD');
+    }
+  }, []);
+
+  const handleLoginSuccess = (loggedInUser: User) => {
+    setUser(loggedInUser);
+    localStorage.setItem('user', JSON.stringify(loggedInUser));
+    setAppState('DASHBOARD');
+  };
+
+  const handleLogout = () => {
+    setUser(null);
+    localStorage.removeItem('user');
+    setAppState('AUTH');
+  };
+
+  const handleCreateNew = () => {
+    setAppState('COURSE_CREATE');
+    setFile(null);
+    setTitle('');
+  };
+
+  const handleResumeCourse = (course: Course) => {
+    if (course.lessons && course.lessons.length > 0) {
+      setBlocks(course.lessons[0].blocks);
+    } else {
+      setBlocks([]); // Handle empty lessons properly if needed
+    }
+    setCurrentCourse(course);
+    setCurrentStepIndex(course.currentStepIndex || 0);
+    setAppState('COURSE_PLAYER');
+  };
 
   useEffect(() => {
     if (currentBlock) {
@@ -30,9 +75,21 @@ function App() {
     }
   }, [currentStepIndex, currentBlock]);
 
+  const saveProgress = async (courseId: number, index: number) => {
+    try {
+      await axios.put(`${API_BASE}/${courseId}/progress?stepIndex=${index}`);
+    } catch (err) {
+      console.error('Failed to save progress', err);
+    }
+  };
+
   const handleNext = () => {
     if (currentStepIndex < blocks.length - 1) {
-      setCurrentStepIndex(currentStepIndex + 1);
+      const nextIndex = currentStepIndex + 1;
+      setCurrentStepIndex(nextIndex);
+      if (currentCourse) {
+        saveProgress(currentCourse.id, nextIndex);
+      }
     }
   };
 
@@ -42,7 +99,7 @@ function App() {
 
   const getLatestTheoryBlock = (): TheoryBlock | null => {
     for (let i = currentStepIndex; i >= 0; i--) {
-      if (blocks[i].type === 'theory_markdown') {
+      if (blocks[i]?.type === 'theory_markdown') {
         return blocks[i] as TheoryBlock;
       }
     }
@@ -51,23 +108,25 @@ function App() {
 
   const handleGenerateCourse = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!file || !title) return;
+    if (!file || !title || !user) return;
 
     setIsLoading(true);
     const formData = new FormData();
     formData.append('title', title);
     formData.append('file', file);
+    formData.append('userId', user.id.toString());
 
     try {
       const response = await axios.post(`${API_BASE}/generate`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
-      // The backend returns a Course, which has a list of lessons.
-      // We take the blocks from the first lesson.
-      const firstLesson = response.data.lessons[0];
+      const generatedCourse = response.data;
+      setCurrentCourse(generatedCourse);
+      const firstLesson = generatedCourse.lessons?.[0];
       if (firstLesson && firstLesson.blocks) {
         setBlocks(firstLesson.blocks);
         setCurrentStepIndex(0);
+        setAppState('COURSE_PLAYER');
       }
     } catch (error) {
       console.error('Error generating course:', error);
@@ -77,9 +136,32 @@ function App() {
     }
   };
 
-  if (blocks.length === 0) {
+  if (appState === 'AUTH') {
+    return <AuthPane onLoginSuccess={handleLoginSuccess} />;
+  }
+
+  if (appState === 'DASHBOARD' && user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 font-sans">
+      <Dashboard
+        user={user}
+        onLogout={handleLogout}
+        onCreateNew={handleCreateNew}
+        onResumeCourse={handleResumeCourse}
+      />
+    );
+  }
+
+  if (appState === 'COURSE_CREATE') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 font-sans relative">
+        <button
+          onClick={() => setAppState('DASHBOARD')}
+          className="absolute top-8 left-8 flex items-center text-slate-600 hover:text-indigo-600 transition-colors"
+        >
+          <ArrowLeft className="w-5 h-5 mr-2" />
+          Back to Dashboard
+        </button>
+
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -139,92 +221,103 @@ function App() {
     );
   }
 
-  const theoryBlock = getLatestTheoryBlock();
-  const isInteractiveNow = currentBlock.type !== 'theory_markdown';
+  if (appState === 'COURSE_PLAYER' && blocks.length > 0) {
+    const theoryBlock = getLatestTheoryBlock();
+    const isInteractiveNow = currentBlock.type !== 'theory_markdown';
 
-  return (
-    <div className="h-screen flex flex-col font-sans bg-slate-50 overflow-hidden">
-      <header className="bg-white shadow-sm border-b border-slate-200 px-8 py-4 flex justify-between items-center z-10">
-        <div className="flex items-center space-x-3 text-indigo-700">
-          <BookOpen className="w-8 h-8" />
-          <h1 className="text-2xl font-black tracking-tight">AI Interactive Course Engine</h1>
-        </div>
-        
-        <div className="flex items-center space-x-4">
-          <div className="text-sm font-medium text-slate-500 bg-slate-100 px-4 py-1.5 rounded-full">
-            Progress: {currentStepIndex + 1} / {blocks.length}
+    return (
+      <div className="h-screen flex flex-col font-sans bg-slate-50 overflow-hidden">
+        <header className="bg-white shadow-sm border-b border-slate-200 px-8 py-4 flex justify-between items-center z-10">
+          <div className="flex items-center space-x-3 text-indigo-700">
+            <button
+              onClick={() => setAppState('DASHBOARD')}
+              className="mr-4 text-slate-500 hover:text-indigo-600 transition-colors"
+            >
+              <ArrowLeft className="w-6 h-6" />
+            </button>
+            <BookOpen className="w-8 h-8" />
+            <h1 className="text-2xl font-black tracking-tight">{currentCourse?.title || 'Course Player'}</h1>
           </div>
-        </div>
-      </header>
+          
+          <div className="flex items-center space-x-4">
+            <div className="text-sm font-medium text-slate-500 bg-slate-100 px-4 py-1.5 rounded-full">
+              Progress: {currentStepIndex + 1} / {blocks.length}
+            </div>
+          </div>
+        </header>
 
-      <main className="flex-1 flex overflow-hidden">
-        <div className={`transition-all duration-500 ease-in-out ${isInteractiveNow ? 'w-1/2' : 'w-full max-w-4xl mx-auto'} h-full overflow-y-auto p-8`}>
-          <AnimatePresence mode="wait">
-            {theoryBlock && (
-              <TheoryPane key={`theory-${theoryBlock.content.substring(0, 10)}`} block={theoryBlock} />
-            )}
-          </AnimatePresence>
-        </div>
-
-        {isInteractiveNow && (
-          <div className="w-1/2 h-full p-8 border-l border-slate-200 bg-white overflow-y-auto">
+        <main className="flex-1 flex overflow-hidden">
+          <div className={`transition-all duration-500 ease-in-out ${isInteractiveNow ? 'w-1/2' : 'w-full max-w-4xl mx-auto'} h-full overflow-y-auto p-8`}>
             <AnimatePresence mode="wait">
-              {currentBlock.type === 'interactive_fill_blank' && (
-                <FillBlankPane 
-                  key={`interactive-${currentStepIndex}`}
-                  block={currentBlock as FillBlankBlock} 
-                  onSuccess={handleInteractiveSuccess} 
-                />
-              )}
-              {currentBlock.type === 'interactive_scenario' && (
-                <ScenarioPane 
-                  key={`scenario-${currentStepIndex}`}
-                  block={currentBlock as ScenarioBlock} 
-                  onSuccess={handleInteractiveSuccess} 
-                />
-              )}
-              {currentBlock.type === 'interactive_code_editor' && (
-                <CodePane 
-                  key={`code-${currentStepIndex}`}
-                  block={currentBlock as CodeBlock} 
-                  onSuccess={handleInteractiveSuccess} 
-                />
+              {theoryBlock && (
+                <TheoryPane key={`theory-${theoryBlock.content.substring(0, 10)}`} block={theoryBlock} />
               )}
             </AnimatePresence>
           </div>
-        )}
-      </main>
 
-      <footer className="bg-white border-t border-slate-200 p-4 flex justify-center z-10">
-        {!isInteractiveNow && (
-          <button
-            onClick={handleNext}
-            disabled={currentStepIndex === blocks.length - 1}
-            className={`px-8 py-3 rounded-full font-bold shadow-sm transition-all ${
-              currentStepIndex === blocks.length - 1
-                ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                : 'bg-indigo-600 hover:bg-indigo-700 text-white transform hover:-translate-y-0.5 hover:shadow-md'
-            }`}
-          >
-            {currentStepIndex === blocks.length - 1 ? 'Course Completed' : 'Next Lesson'}
-          </button>
-        )}
-        {isInteractiveNow && (
-          <div className="text-slate-500 font-medium animate-pulse">
-            {canProceed ? 'Great! You can proceed to the next lesson.' : 'Complete the interactive exercise to continue.'}
-          </div>
-        )}
-        {isInteractiveNow && canProceed && (
-          <button
-            onClick={handleNext}
-            className="ml-6 px-8 py-3 rounded-full font-bold shadow-sm transition-all bg-green-600 hover:bg-green-700 text-white transform hover:-translate-y-0.5 hover:shadow-md"
-          >
-            Next Lesson
-          </button>
-        )}
-      </footer>
-    </div>
-  );
+          {isInteractiveNow && (
+            <div className="w-1/2 h-full p-8 border-l border-slate-200 bg-white overflow-y-auto">
+              <AnimatePresence mode="wait">
+                {currentBlock.type === 'interactive_fill_blank' && (
+                  <FillBlankPane 
+                    key={`interactive-${currentStepIndex}`}
+                    block={currentBlock as FillBlankBlock} 
+                    onSuccess={handleInteractiveSuccess} 
+                  />
+                )}
+                {currentBlock.type === 'interactive_scenario' && (
+                  <ScenarioPane 
+                    key={`scenario-${currentStepIndex}`}
+                    block={currentBlock as ScenarioBlock} 
+                    onSuccess={handleInteractiveSuccess} 
+                  />
+                )}
+                {currentBlock.type === 'interactive_code_editor' && (
+                  <CodePane 
+                    key={`code-${currentStepIndex}`}
+                    block={currentBlock as CodeBlock} 
+                    onSuccess={handleInteractiveSuccess} 
+                  />
+                )}
+              </AnimatePresence>
+            </div>
+          )}
+        </main>
+
+        <footer className="bg-white border-t border-slate-200 p-4 flex justify-center z-10">
+          {!isInteractiveNow && (
+            <button
+              onClick={handleNext}
+              disabled={currentStepIndex === blocks.length - 1}
+              className={`px-8 py-3 rounded-full font-bold shadow-sm transition-all ${
+                currentStepIndex === blocks.length - 1
+                  ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                  : 'bg-indigo-600 hover:bg-indigo-700 text-white transform hover:-translate-y-0.5 hover:shadow-md'
+              }`}
+            >
+              {currentStepIndex === blocks.length - 1 ? 'Course Completed' : 'Next Lesson'}
+            </button>
+          )}
+          {isInteractiveNow && (
+            <div className="text-slate-500 font-medium animate-pulse">
+              {canProceed ? 'Great! You can proceed to the next lesson.' : 'Complete the interactive exercise to continue.'}
+            </div>
+          )}
+          {isInteractiveNow && canProceed && (
+            <button
+              onClick={handleNext}
+              className="ml-6 px-8 py-3 rounded-full font-bold shadow-sm transition-all bg-green-600 hover:bg-green-700 text-white transform hover:-translate-y-0.5 hover:shadow-md"
+            >
+              Next Lesson
+            </button>
+          )}
+        </footer>
+      </div>
+    );
+  }
+
+  // Fallback
+  return null;
 }
 
 export default App;

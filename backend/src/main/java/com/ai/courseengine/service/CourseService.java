@@ -24,7 +24,7 @@ public class CourseService {
     private final LessonRepository lessonRepository;
 
     @Transactional
-    public Course generateCourseFromDocument(String title, MultipartFile file) throws IOException {
+    public Course generateCourseFromDocument(String title, MultipartFile file, Long userId) throws IOException {
         // Step 1: Parse the document
         String rawText = documentParserService.parsePdf(file);
         
@@ -41,6 +41,7 @@ public class CourseService {
         Course course = new Course();
         course.setTitle(title);
         course.setDescription("AI Generated Course from " + file.getOriginalFilename());
+        course.setUserId(userId);
         course = courseRepository.save(course);
 
         Lesson lesson = new Lesson();
@@ -64,5 +65,17 @@ public class CourseService {
     @Transactional(readOnly = true)
     public List<Course> getAllCourses() {
         return courseRepository.findAll();
+    }
+
+    @Transactional(readOnly = true)
+    public List<Course> getCoursesByUserId(Long userId) {
+        return courseRepository.findAllByUserId(userId);
+    }
+
+    @Transactional
+    public Course saveProgress(Long courseId, Integer stepIndex) {
+        Course course = courseRepository.findById(courseId).orElseThrow();
+        course.setCurrentStepIndex(stepIndex);
+        return courseRepository.save(course);
     }
 }

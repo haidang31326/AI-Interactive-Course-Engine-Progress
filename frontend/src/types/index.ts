@@ -40,3 +40,23 @@ export interface CodeBlock extends BaseBlock {
 }
 
 export type Block = TheoryBlock | FillBlankBlock | ScenarioBlock | CodeBlock;
+
+export interface User {
+  id: number;
+  username: string;
+}
+
+export interface Course {
+  id: number;
+  title: string;
+  description: string;
+  currentStepIndex: number;
+  lessons: Lesson[];
+}
+
+export interface Lesson {
+  id: number;
+  title: string;
+  order: number;
+  blocks: Block[];
+}

@@ -20,9 +20,10 @@ public class CourseController {
     @PostMapping("/generate")
     public ResponseEntity<Course> generateCourse(
             @RequestParam("title") String title,
-            @RequestParam("file") MultipartFile file) {
+            @RequestParam("file") MultipartFile file,
+            @RequestParam(value = "userId", required = false) Long userId) {
         try {
-            Course course = courseService.generateCourseFromDocument(title, file);
+            Course course = courseService.generateCourseFromDocument(title, file, userId);
             return ResponseEntity.ok(course);
         } catch (Exception e) {
             e.printStackTrace();
@@ -40,5 +41,21 @@ public class CourseController {
         return courseService.getCourse(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<List<Course>> getAllCoursesByUser(@PathVariable Long userId) {
+        return ResponseEntity.ok(courseService.getCoursesByUserId(userId));
+    }
+
+    @PutMapping("/{courseId}/progress")
+    public ResponseEntity<Course> saveProgress(
+            @PathVariable Long courseId, 
+            @RequestParam("stepIndex") Integer stepIndex) {
+        try {
+            return ResponseEntity.ok(courseService.saveProgress(courseId, stepIndex));
+        } catch (Exception e) {
+            return ResponseEntity.notFound().build();
+        }
     }
 }

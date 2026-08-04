@@ -92,7 +92,13 @@ public class GeminiAiService {
                 jsonOutput = jsonOutput.replaceAll("\"\\s+\\{", "\", {"); // Fix missing comma before object
                 jsonOutput = jsonOutput.replaceAll("\\}\\s+\"", "}, \""); // Fix missing comma before string
                 
-                return objectMapper.readValue(jsonOutput, new TypeReference<List<Block>>() {});
+                try {
+                    return objectMapper.readValue(jsonOutput, new TypeReference<List<Block>>() {});
+                } catch (Exception e) {
+                    System.err.println("JSON Parse Error! Raw output from Gemini:");
+                    System.err.println(jsonOutput);
+                    throw new RuntimeException("Failed to parse JSON from Gemini API", e);
+                }
             }
         } catch (Exception e) {
             e.printStackTrace();

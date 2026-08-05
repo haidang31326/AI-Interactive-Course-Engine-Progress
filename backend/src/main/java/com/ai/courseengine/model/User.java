@@ -11,11 +11,14 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(unique = true, nullable = false)
-    private String username;
+    @Column(unique = true)
+    private String firebaseUid;
 
-    @Column(nullable = false)
-    private String password;
+    @Column
+    private String email;
+
+    @Column
+    private String username;
 
     @Column(columnDefinition = "TEXT")
     private String pinnedNotes;

@@ -25,6 +25,7 @@ export const TutorSidebar: React.FC<Props> = ({ isOpen, onClose, contextText }) 
   const handleSend = () => {
     if (!question.trim() || isLoading) return;
     setIsLoading(true);
+    setAnswer(""); // clear previous answer when asking new question
     fetch('http://localhost:8080/api/chat/explain', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -82,7 +83,27 @@ export const TutorSidebar: React.FC<Props> = ({ isOpen, onClose, contextText }) 
                 </div>
               )}
               
-              {answer && (
+              {isLoading && !answer && (
+                <div className="bg-purple-50 rounded-xl p-5 shadow-sm border border-purple-100 flex space-x-2 items-center text-purple-500 w-32">
+                  <motion.div
+                    className="w-2 h-2 bg-purple-500 rounded-full"
+                    animate={{ y: [0, -5, 0] }}
+                    transition={{ duration: 0.6, repeat: Infinity, delay: 0 }}
+                  />
+                  <motion.div
+                    className="w-2 h-2 bg-purple-500 rounded-full"
+                    animate={{ y: [0, -5, 0] }}
+                    transition={{ duration: 0.6, repeat: Infinity, delay: 0.2 }}
+                  />
+                  <motion.div
+                    className="w-2 h-2 bg-purple-500 rounded-full"
+                    animate={{ y: [0, -5, 0] }}
+                    transition={{ duration: 0.6, repeat: Infinity, delay: 0.4 }}
+                  />
+                  <span className="text-xs font-semibold ml-2">Thinking...</span>
+                </div>
+              )}
+              {answer && !isLoading && (
                 <div className="bg-purple-50 rounded-xl p-5 shadow-sm border border-purple-100 prose prose-sm max-w-none text-slate-700">
                   <ReactMarkdown>{answer}</ReactMarkdown>
                 </div>

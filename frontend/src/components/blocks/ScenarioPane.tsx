@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
+import { Sparkles } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import type { ScenarioBlock } from '../../types';
 
 interface Props {
   block: ScenarioBlock;
   onSuccess: () => void;
+  onAskHint?: (question: string) => void;
 }
 
-const ScenarioPane: React.FC<Props> = ({ block, onSuccess }) => {
+const ScenarioPane: React.FC<Props> = ({ block, onSuccess, onAskHint }) => {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [hasError, setHasError] = useState(false);
   const [showExplanation, setShowExplanation] = useState(false);
@@ -96,17 +98,28 @@ const ScenarioPane: React.FC<Props> = ({ block, onSuccess }) => {
 
         <div className="pt-4 text-center">
           {!isSuccess && (
-            <button
-              onClick={handleSubmit}
-              disabled={!selectedId}
-              className={`px-8 py-3 rounded-full font-semibold shadow-lg transition-all ${
-                selectedId 
-                  ? 'bg-purple-600 hover:bg-purple-700 text-white transform hover:-translate-y-1' 
-                  : 'bg-slate-300 text-slate-500 cursor-not-allowed'
-              }`}
-            >
-              Check Answer
-            </button>
+            <div className="space-x-4">
+              <button
+                onClick={handleSubmit}
+                disabled={!selectedId}
+                className={`px-8 py-3 rounded-full font-semibold shadow-lg transition-all ${
+                  selectedId 
+                    ? 'bg-purple-600 hover:bg-purple-700 text-white transform hover:-translate-y-1' 
+                    : 'bg-slate-300 text-slate-500 cursor-not-allowed'
+                }`}
+              >
+                Check Answer
+              </button>
+              {onAskHint && (
+                <button
+                  onClick={() => onAskHint(block.scenario)}
+                  className="px-6 py-3 bg-purple-100 text-purple-700 rounded-full font-semibold hover:bg-purple-200 shadow-md transition-all transform hover:-translate-y-1 inline-flex items-center"
+                >
+                  <Sparkles className="w-5 h-5 mr-2" />
+                  Ask AI Hint
+                </button>
+              )}
+            </div>
           )}
         </div>
       </div>

@@ -426,6 +426,7 @@ function App() {
                         onSuccess={() => {
                           if (index === currentStepIndex) handleInteractiveSuccess();
                         }} 
+                        onAskHint={(q) => handleAskAI("I'm stuck on this exercise. Can you give me a subtle hint without revealing the direct answer? Question: " + q)}
                       />
                     )}
                     {b.type === 'interactive_scenario' && (
@@ -434,6 +435,7 @@ function App() {
                         onSuccess={() => {
                           if (index === currentStepIndex) handleInteractiveSuccess();
                         }} 
+                        onAskHint={(q) => handleAskAI("I'm stuck on this scenario. Can you give me a subtle hint without revealing the direct answer? Context: " + q)}
                       />
                     )}
                     {b.type === 'interactive_code_editor' && (
@@ -442,6 +444,7 @@ function App() {
                         onSuccess={() => {
                           if (index === currentStepIndex) handleInteractiveSuccess();
                         }} 
+                        onAskHint={(q) => handleAskAI("I'm stuck on this coding exercise. Can you give me a subtle hint without writing the code for me? Instruction: " + q)}
                       />
                     )}
                   </div>

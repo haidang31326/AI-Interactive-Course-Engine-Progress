@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
+import { Sparkles } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import type { CodeBlock } from '../../types';
 
 interface Props {
   block: CodeBlock;
   onSuccess: () => void;
+  onAskHint?: (question: string) => void;
 }
 
-const CodePane: React.FC<Props> = ({ block, onSuccess }) => {
+const CodePane: React.FC<Props> = ({ block, onSuccess, onAskHint }) => {
   const [code, setCode] = useState(block.startingCode || '');
   const [hasError, setHasError] = useState(false);
   const [showHint, setShowHint] = useState(false);
@@ -120,10 +122,19 @@ const CodePane: React.FC<Props> = ({ block, onSuccess }) => {
             <>
               <button
                 onClick={handleSubmit}
-                className="px-8 py-3 bg-indigo-500 text-white rounded-xl font-semibold hover:bg-indigo-600 shadow-lg transition-all"
+                className="px-8 py-3 bg-emerald-500 text-white rounded-xl font-bold hover:bg-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.3)] transition-all"
               >
                 Run Code
               </button>
+              {onAskHint && (
+                <button
+                  onClick={() => onAskHint(block.instruction)}
+                  className="px-6 py-3 bg-purple-500/20 text-purple-400 border border-purple-500/30 rounded-xl font-bold hover:bg-purple-500/30 shadow-md transition-all inline-flex items-center"
+                >
+                  <Sparkles className="w-5 h-5 mr-2" />
+                  Ask AI Hint
+                </button>
+              )}
               <button
                 onClick={handleShowAnswer}
                 className="px-8 py-3 bg-slate-700 text-slate-300 rounded-xl font-semibold hover:bg-slate-600 shadow-md transition-all"

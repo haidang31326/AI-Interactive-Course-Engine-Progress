@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
+import { Sparkles } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import type { FillBlankBlock } from '../../types';
 
 interface Props {
   block: FillBlankBlock;
   onSuccess: () => void;
+  onAskHint?: (question: string) => void;
 }
 
-const FillBlankPane: React.FC<Props> = ({ block, onSuccess }) => {
+const FillBlankPane: React.FC<Props> = ({ block, onSuccess, onAskHint }) => {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [hasError, setHasError] = useState(false);
   const [showHint, setShowHint] = useState(false);
@@ -141,6 +143,15 @@ const FillBlankPane: React.FC<Props> = ({ block, onSuccess }) => {
               >
                 Submit Answer
               </button>
+              {onAskHint && (
+                <button
+                  onClick={() => onAskHint(block.text)}
+                  className="px-6 py-3 bg-purple-100 text-purple-700 rounded-full font-semibold hover:bg-purple-200 shadow-md transition-all transform hover:-translate-y-1 inline-flex items-center"
+                >
+                  <Sparkles className="w-5 h-5 mr-2" />
+                  Ask AI Hint
+                </button>
+              )}
               <button
                 onClick={handleShowAnswer}
                 className="px-8 py-3 bg-slate-200 text-slate-700 rounded-full font-semibold hover:bg-slate-300 shadow-md transition-all transform hover:-translate-y-1"

@@ -6,11 +6,12 @@ import FillBlankPane from './components/blocks/FillBlankPane';
 import ScenarioPane from './components/blocks/ScenarioPane';
 import CodePane from './components/blocks/CodePane';
 import type { TheoryBlock, FillBlankBlock, ScenarioBlock, CodeBlock, Block, User, Course } from './types';
-import { BookOpen, UploadCloud, Loader2, ArrowLeft, Bookmark } from 'lucide-react';
+import { BookOpen, UploadCloud, Loader2, ArrowLeft, Bookmark, Sparkles } from 'lucide-react';
 import { AuthPane } from './components/AuthPane';
 import { Dashboard } from './components/Dashboard';
 import { GlobalPomodoro } from './components/GlobalPomodoro';
 import { NotebookSidebar } from './components/NotebookSidebar';
+import { TutorSidebar } from './components/TutorSidebar';
 import type { Highlight } from './types';
 
 const API_BASE = 'http://localhost:8080/api/courses';
@@ -32,6 +33,9 @@ function App() {
 
   const [isNotebookOpen, setIsNotebookOpen] = useState(false);
   const [highlights, setHighlights] = useState<Highlight[]>([]);
+
+  const [isTutorOpen, setIsTutorOpen] = useState(false);
+  const [tutorContext, setTutorContext] = useState("");
 
   useEffect(() => {
     if (user && currentCourse) {
@@ -73,6 +77,11 @@ function App() {
       .then(res => res.json())
       .then(data => setHighlights(highlights.map(h => h.id === id ? data : h)))
       .catch(err => console.error(err));
+  };
+
+  const handleAskAI = (text: string) => {
+    setTutorContext(text);
+    setIsTutorOpen(true);
   };
 
   const currentBlock = blocks[currentStepIndex];
@@ -315,6 +324,16 @@ function App() {
           
           <div className="flex items-center space-x-4">
             <button
+              onClick={() => {
+                setTutorContext("");
+                setIsTutorOpen(true);
+              }}
+              className="flex items-center text-sm font-bold text-purple-600 bg-purple-50 hover:bg-purple-100 px-4 py-1.5 rounded-full transition-colors border border-purple-100"
+            >
+              <Sparkles className="w-4 h-4 mr-1.5" />
+              Ask AI
+            </button>
+            <button
               onClick={() => setIsNotebookOpen(true)}
               className="flex items-center text-sm font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-4 py-1.5 rounded-full transition-colors border border-indigo-100"
             >
@@ -335,6 +354,7 @@ function App() {
                   key={`theory-${theoryBlock.content.substring(0, 10)}`} 
                   block={theoryBlock} 
                   onSaveHighlight={handleSaveHighlight}
+                  onAskAI={handleAskAI}
                 />
               )}
             </AnimatePresence>
@@ -428,6 +448,12 @@ function App() {
             onUpdateNote={handleUpdateNote}
           />
         )}
+
+        <TutorSidebar
+          isOpen={isTutorOpen}
+          onClose={() => setIsTutorOpen(false)}
+          contextText={tutorContext}
+        />
       </div>
       );
     }

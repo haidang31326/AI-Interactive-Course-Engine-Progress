@@ -153,7 +153,14 @@ public class GeminiAiService {
                       + "Please provide a clear, concise, and helpful explanation directly addressing their question. "
                       + "Format your response in plain text (or light markdown) without any JSON wrapping.";
 
-        GeminiRequest request = new GeminiRequest(prompt);
+        GeminiRequest request = GeminiRequest.builder()
+                .contents(List.of(
+                        GeminiRequest.Content.builder()
+                                .role("user")
+                                .parts(List.of(GeminiRequest.Part.builder().text(prompt).build()))
+                                .build()
+                ))
+                .build();
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         HttpEntity<GeminiRequest> entity = new HttpEntity<>(request, headers);

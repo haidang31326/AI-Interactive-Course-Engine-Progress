@@ -114,7 +114,7 @@ function App() {
     setTargetCourseId(null);
   };
 
-  const handleAppendLesson = (courseId: number, courseTitle: string) => {
+  const handleAppendLesson = (courseId: number) => {
     setAppState('COURSE_CREATE');
     setFile(null);
     setTitle('');

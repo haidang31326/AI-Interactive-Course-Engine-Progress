@@ -138,7 +138,8 @@ function App() {
 
   const handleResumeCourse = (course: Course) => {
     if (course.lessons && course.lessons.length > 0) {
-      setBlocks(course.lessons[0].blocks);
+      const allBlocks = course.lessons.reduce((acc: Block[], lesson) => [...acc, ...(lesson.blocks || [])], []);
+      setBlocks(allBlocks);
     } else {
       setBlocks([]); // Handle empty lessons properly if needed
     }
@@ -230,11 +231,24 @@ function App() {
       });
       const generatedCourse = response.data;
       setCurrentCourse(generatedCourse);
-      const firstLesson = generatedCourse.lessons?.[0];
-      if (firstLesson && firstLesson.blocks) {
-        setBlocks(firstLesson.blocks);
-        setCurrentStepIndex(0);
-        setCompletedSteps(new Set());
+      
+      if (generatedCourse.lessons && generatedCourse.lessons.length > 0) {
+        const allBlocks = generatedCourse.lessons.reduce((acc: Block[], lesson: any) => [...acc, ...(lesson.blocks || [])], []);
+        setBlocks(allBlocks);
+        
+        // If appending a new chapter, start from the beginning of the NEW chapter
+        if (targetCourseId) {
+          const previousBlocksCount = generatedCourse.lessons.slice(0, -1).reduce((acc: number, lesson: any) => acc + (lesson.blocks?.length || 0), 0);
+          setCurrentStepIndex(previousBlocksCount);
+          // Set previously completed steps up to this point
+          const previouslyCompleted = new Set<number>();
+          for (let i = 0; i < previousBlocksCount; i++) previouslyCompleted.add(i);
+          setCompletedSteps(previouslyCompleted);
+        } else {
+          setCurrentStepIndex(0);
+          setCompletedSteps(new Set());
+        }
+        
         setAppState('COURSE_PLAYER');
       }
     } catch (error) {

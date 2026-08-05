@@ -229,7 +229,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {courses.map((course, index) => {
-                  const totalSteps = course.lessons && course.lessons.length > 0 && course.lessons[0].blocks ? course.lessons[0].blocks.length : 10;
+                  const totalSteps = course.lessons && course.lessons.length > 0 
+                    ? course.lessons.reduce((acc, lesson) => acc + (lesson.blocks?.length || 0), 0) 
+                    : 10;
                   const currentStep = course.currentStepIndex || 0;
                   const progressPercent = Math.min(100, Math.round(((currentStep) / totalSteps) * 100));
 

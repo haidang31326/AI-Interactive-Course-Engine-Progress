@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import type { Course, User } from '../types';
-import { LogOut, Plus, Play, BookOpen, Loader2, FileText, Search, Trophy, Medal, Trash2 } from 'lucide-react';
+import { LogOut, Plus, Play, BookOpen, Loader2, FileText, Search, Trash2, Waves } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 // --- SIDEBAR WIDGETS ---
@@ -38,39 +38,94 @@ const QuickLookupWidget = () => {
   );
 };
 
-const AchievementsWidget: React.FC<{ courses: Course[] }> = ({ courses }) => {
-  // Mock logic: give a badge for every course that has progress > 0
-  const startedCourses = courses.filter(c => c.currentStepIndex && c.currentStepIndex > 0);
+const AquariumWidget: React.FC<{ courses: Course[] }> = ({ courses }) => {
+  const totalCompletedSteps = courses.reduce((acc, c) => acc + (c.currentStepIndex || 0), 0);
+  
+  // 1 item for every 5 steps. max 20 items.
+  const itemCount = Math.min(Math.floor(totalCompletedSteps / 5), 20);
+  
+  const seaCreatures = ['🐟', '🐠', '🐡', '🐢', '🐙', '🦑', '🦐', '🦀', '🦈', '🐋'];
+  
+  const items = React.useMemo(() => {
+    const newItems = [];
+    for (let i = 0; i < itemCount; i++) {
+      newItems.push({
+        id: i,
+        emoji: seaCreatures[Math.floor(Math.random() * seaCreatures.length)],
+        top: `${Math.random() * 70 + 10}%`,
+        duration: Math.random() * 15 + 10,
+        delay: -(Math.random() * 20),
+        direction: Math.random() > 0.5 ? 1 : -1,
+        size: Math.random() * 1 + 1.2
+      });
+    }
+    return newItems;
+  }, [itemCount]);
 
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
-      <div className="flex items-center justify-between mb-4">
+    <div className="bg-gradient-to-b from-slate-900 to-indigo-950/40 border border-slate-800 rounded-2xl p-6 relative overflow-hidden h-64 shadow-[inset_0_0_30px_rgba(0,0,0,0.5)]">
+      <div className="relative z-20 flex items-center justify-between mb-2">
         <h3 className="font-bold text-white flex items-center">
-          <Trophy className="w-5 h-5 mr-2 text-emerald-500" />
-          Achievements
+          <Waves className="w-5 h-5 mr-2 text-cyan-400" />
+          Study Aquarium
         </h3>
+        <span className="text-xs font-bold text-cyan-300 bg-cyan-900/50 px-2 py-1 rounded-full border border-cyan-800">
+          {totalCompletedSteps} steps
+        </span>
       </div>
       
-      {startedCourses.length === 0 ? (
-        <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 text-center">
-          <p className="text-sm text-slate-400">Start learning a course to earn your first badge!</p>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {startedCourses.map((c, idx) => (
-            <div key={idx} className="bg-slate-950 border border-emerald-500/30 rounded-xl p-3 flex items-center relative overflow-hidden group">
-              <div className="absolute right-0 top-0 w-16 h-full bg-emerald-500/5 -skew-x-12 translate-x-8 group-hover:translate-x-2 transition-transform duration-500"></div>
-              <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center mr-3 flex-shrink-0 border border-emerald-500/20">
-                <Medal className="w-5 h-5 text-emerald-400" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <h4 className="text-sm font-bold text-emerald-400 truncate">{c.title}</h4>
-                <p className="text-xs text-slate-400">Progress Started</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+      {/* Background elements */}
+      <div className="absolute bottom-0 left-0 w-full h-12 bg-gradient-to-t from-yellow-900/20 to-transparent z-10 pointer-events-none"></div>
+      <div className="absolute bottom-1 left-4 text-3xl opacity-40 z-10">🌿</div>
+      <div className="absolute bottom-0 right-8 text-4xl opacity-40 z-10">🌿</div>
+      <div className="absolute bottom-3 right-16 text-xl opacity-40 z-10">🐚</div>
+
+      {/* Animated Bubbles */}
+      <motion.div 
+        animate={{ y: [-10, -200], opacity: [0, 0.5, 0] }} 
+        transition={{ duration: 4, repeat: Infinity, ease: "easeIn" }}
+        className="absolute bottom-4 left-1/4 text-sm z-10"
+      >🫧</motion.div>
+      <motion.div 
+        animate={{ y: [0, -250], opacity: [0, 0.6, 0] }} 
+        transition={{ duration: 5, repeat: Infinity, ease: "easeIn", delay: 2 }}
+        className="absolute bottom-2 right-1/3 text-lg z-10"
+      >🫧</motion.div>
+
+      {/* Sea Creatures */}
+      <div className="absolute inset-0 z-10 w-full h-full pointer-events-none">
+        {items.length === 0 ? (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <p className="text-sm text-cyan-200/50 text-center px-4 bg-slate-900/50 py-2 rounded-xl backdrop-blur-sm">
+              Complete 5 steps to hatch your first fish!
+            </p>
+          </div>
+        ) : (
+          items.map(item => (
+            <motion.div
+              key={item.id}
+              className="absolute drop-shadow-lg"
+              style={{ top: item.top, fontSize: `${item.size}rem` }}
+              initial={{ x: item.direction > 0 ? 350 : -50 }}
+              animate={{ x: item.direction > 0 ? -50 : 350 }}
+              transition={{ 
+                duration: item.duration, 
+                repeat: Infinity, 
+                ease: "linear",
+                delay: item.delay
+              }}
+            >
+              <motion.div 
+                animate={{ y: [0, -10, 0] }}
+                transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                style={{ transform: `scaleX(${item.direction})` }}
+              >
+                {item.emoji}
+              </motion.div>
+            </motion.div>
+          ))
+        )}
+      </div>
     </div>
   );
 };
@@ -313,7 +368,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
           {/* RIGHT COLUMN: 1/3 SIDEBAR */}
           <div className="lg:col-span-1 space-y-6">
             <QuickLookupWidget />
-            <AchievementsWidget courses={courses} />
+            <AquariumWidget courses={courses} />
             <NotesWidget userId={user.id} />
           </div>
 

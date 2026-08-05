@@ -106,8 +106,8 @@ const AquariumWidget: React.FC<{ courses: Course[] }> = ({ courses }) => {
               key={item.id}
               className="absolute drop-shadow-lg"
               style={{ top: item.top, fontSize: `${item.size}rem` }}
-              initial={{ x: item.direction > 0 ? 350 : -50 }}
-              animate={{ x: item.direction > 0 ? -50 : 350 }}
+              initial={{ left: item.direction > 0 ? '110%' : '-10%' }}
+              animate={{ left: item.direction > 0 ? '-10%' : '110%' }}
               transition={{ 
                 duration: item.duration, 
                 repeat: Infinity, 
@@ -118,9 +118,10 @@ const AquariumWidget: React.FC<{ courses: Course[] }> = ({ courses }) => {
               <motion.div 
                 animate={{ y: [0, -10, 0] }}
                 transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-                style={{ transform: `scaleX(${item.direction})` }}
               >
-                {item.emoji}
+                <div style={{ transform: `scaleX(${item.direction})`, display: 'inline-block' }}>
+                  {item.emoji}
+                </div>
               </motion.div>
             </motion.div>
           ))

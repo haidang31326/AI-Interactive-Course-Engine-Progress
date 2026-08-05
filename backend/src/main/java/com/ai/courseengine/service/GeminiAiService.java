@@ -145,4 +145,30 @@ public class GeminiAiService {
             RAW TEXT TO PROCESS:
             """ + rawText;
     }
+
+    public String explainHighlightedText(String highlightedText, String userQuestion) {
+        String prompt = "You are an expert AI tutor. The user is reading a lesson and highlighted the following text:\n\n"
+                      + "\"" + highlightedText + "\"\n\n"
+                      + "They asked the following question about it: \"" + userQuestion + "\"\n\n"
+                      + "Please provide a clear, concise, and helpful explanation directly addressing their question. "
+                      + "Format your response in plain text (or light markdown) without any JSON wrapping.";
+
+        GeminiRequest request = new GeminiRequest(prompt);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        HttpEntity<GeminiRequest> entity = new HttpEntity<>(request, headers);
+
+        try {
+            String url = apiUrl + "?key=" + apiKey;
+            GeminiResponse response = restTemplate.postForObject(url, entity, GeminiResponse.class);
+            
+            if (response != null && response.getCandidates() != null && !response.getCandidates().isEmpty()) {
+                return response.getCandidates().get(0).getContent().getParts().get(0).getText();
+            }
+            return "Sorry, I couldn't generate an explanation right now.";
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException("Failed to get explanation from Gemini AI", e);
+        }
+    }
 }

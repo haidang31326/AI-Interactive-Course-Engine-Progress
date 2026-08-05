@@ -6,8 +6,6 @@ import type { Highlight } from '../types';
 interface Props {
   isOpen: boolean;
   onClose: () => void;
-  userId: number;
-  courseId: number;
   highlights: Highlight[];
   onDeleteHighlight: (id: number) => void;
   onUpdateNote: (id: number, note: string) => void;

@@ -6,10 +6,12 @@ import FillBlankPane from './components/blocks/FillBlankPane';
 import ScenarioPane from './components/blocks/ScenarioPane';
 import CodePane from './components/blocks/CodePane';
 import type { TheoryBlock, FillBlankBlock, ScenarioBlock, CodeBlock, Block, User, Course } from './types';
-import { BookOpen, UploadCloud, Loader2, ArrowLeft } from 'lucide-react';
+import { BookOpen, UploadCloud, Loader2, ArrowLeft, Bookmark } from 'lucide-react';
 import { AuthPane } from './components/AuthPane';
 import { Dashboard } from './components/Dashboard';
 import { GlobalPomodoro } from './components/GlobalPomodoro';
+import { NotebookSidebar } from './components/NotebookSidebar';
+import type { Highlight } from './types';
 
 const API_BASE = 'http://localhost:8080/api/courses';
 
@@ -27,6 +29,51 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState('');
+
+  const [isNotebookOpen, setIsNotebookOpen] = useState(false);
+  const [highlights, setHighlights] = useState<Highlight[]>([]);
+
+  useEffect(() => {
+    if (user && currentCourse) {
+      fetch(`http://localhost:8080/api/highlights?userId=${user.id}&courseId=${currentCourse.id}`)
+        .then(res => res.json())
+        .then(data => setHighlights(data))
+        .catch(err => console.error(err));
+    }
+  }, [user, currentCourse]);
+
+  const handleSaveHighlight = (text: string) => {
+    if (!user || !currentCourse) return;
+    const highlight = { userId: user.id, courseId: currentCourse.id, text };
+    fetch('http://localhost:8080/api/highlights', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(highlight)
+    })
+      .then(res => res.json())
+      .then(data => setHighlights([...highlights, data]))
+      .catch(err => console.error(err));
+  };
+
+  const handleDeleteHighlight = (id: number) => {
+    fetch(`http://localhost:8080/api/highlights/${id}`, { method: 'DELETE' })
+      .then(() => setHighlights(highlights.filter(h => h.id !== id)))
+      .catch(err => console.error(err));
+  };
+
+  const handleUpdateNote = (id: number, note: string) => {
+    const highlight = highlights.find(h => h.id === id);
+    if (!highlight) return;
+    const updated = { ...highlight, note };
+    fetch('http://localhost:8080/api/highlights', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updated)
+    })
+      .then(res => res.json())
+      .then(data => setHighlights(highlights.map(h => h.id === id ? data : h)))
+      .catch(err => console.error(err));
+  };
 
   const currentBlock = blocks[currentStepIndex];
 
@@ -267,6 +314,13 @@ function App() {
           </div>
           
           <div className="flex items-center space-x-4">
+            <button
+              onClick={() => setIsNotebookOpen(true)}
+              className="flex items-center text-sm font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-4 py-1.5 rounded-full transition-colors border border-indigo-100"
+            >
+              <Bookmark className="w-4 h-4 mr-1.5" />
+              Notebook ({highlights.length})
+            </button>
             <div className="text-sm font-medium text-slate-500 bg-slate-100 px-4 py-1.5 rounded-full">
               Progress: {currentStepIndex + 1} / {blocks.length}
             </div>
@@ -277,7 +331,11 @@ function App() {
           <div className={`transition-all duration-500 ease-in-out ${isInteractiveNow ? 'w-1/2' : 'w-full max-w-4xl mx-auto'} h-full overflow-y-auto p-8`}>
             <AnimatePresence mode="wait">
               {theoryBlock && (
-                <TheoryPane key={`theory-${theoryBlock.content.substring(0, 10)}`} block={theoryBlock} />
+                <TheoryPane 
+                  key={`theory-${theoryBlock.content.substring(0, 10)}`} 
+                  block={theoryBlock} 
+                  onSaveHighlight={handleSaveHighlight}
+                />
               )}
             </AnimatePresence>
           </div>
@@ -360,6 +418,18 @@ function App() {
             </button>
           )}
         </footer>
+
+        {user && currentCourse && (
+          <NotebookSidebar
+            isOpen={isNotebookOpen}
+            onClose={() => setIsNotebookOpen(false)}
+            userId={user.id}
+            courseId={currentCourse.id}
+            highlights={highlights}
+            onDeleteHighlight={handleDeleteHighlight}
+            onUpdateNote={handleUpdateNote}
+          />
+        )}
       </div>
       );
     }

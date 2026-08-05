@@ -60,3 +60,12 @@ export interface Lesson {
   order: number;
   blocks: Block[];
 }
+
+export interface Highlight {
+  id?: number;
+  userId: number;
+  courseId: number;
+  text: string;
+  color?: string;
+  note?: string;
+}

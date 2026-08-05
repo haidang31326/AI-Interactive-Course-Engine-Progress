@@ -21,9 +21,10 @@ public class CourseController {
     public ResponseEntity<Course> generateCourse(
             @RequestParam("title") String title,
             @RequestParam("file") MultipartFile file,
-            @RequestParam(value = "userId", required = false) Long userId) {
+            @RequestParam(value = "userId", required = false) Long userId,
+            @RequestParam(value = "courseId", required = false) Long courseId) {
         try {
-            Course course = courseService.generateCourseFromDocument(title, file, userId);
+            Course course = courseService.generateCourseFromDocument(title, file, userId, courseId);
             return ResponseEntity.ok(course);
         } catch (Exception e) {
             e.printStackTrace();

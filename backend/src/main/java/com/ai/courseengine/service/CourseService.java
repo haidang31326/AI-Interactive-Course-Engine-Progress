@@ -24,7 +24,7 @@ public class CourseService {
     private final LessonRepository lessonRepository;
 
     @Transactional
-    public Course generateCourseFromDocument(String title, MultipartFile file, Long userId) throws IOException {
+    public Course generateCourseFromDocument(String title, MultipartFile file, Long userId, Long courseId) throws IOException {
         // Step 1: Parse the document
         String rawText = documentParserService.parseDocument(file);
         
@@ -38,15 +38,23 @@ public class CourseService {
         List<Block> generatedBlocks = geminiAiService.generateLessonBlocks(rawText);
 
         // Step 3: Save to Database
-        Course course = new Course();
-        course.setTitle(title);
-        course.setDescription("AI Generated Course from " + file.getOriginalFilename());
-        course.setUserId(userId);
-        course = courseRepository.save(course);
+        Course course;
+        int nextOrder = 1;
+        if (courseId != null) {
+            course = courseRepository.findById(courseId)
+                    .orElseThrow(() -> new RuntimeException("Course not found"));
+            nextOrder = course.getLessons().size() + 1;
+        } else {
+            course = new Course();
+            course.setTitle(title);
+            course.setDescription("AI Generated Course from " + file.getOriginalFilename());
+            course.setUserId(userId);
+            course = courseRepository.save(course);
+        }
 
         Lesson lesson = new Lesson();
-        lesson.setTitle("Chapter 1");
-        lesson.setOrder(1);
+        lesson.setTitle(title != null && courseId != null ? title : "Chapter " + nextOrder);
+        lesson.setOrder(nextOrder);
         lesson.setCourse(course);
         lesson.setBlocks(generatedBlocks);
         

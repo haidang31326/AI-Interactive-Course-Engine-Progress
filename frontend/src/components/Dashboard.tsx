@@ -134,6 +134,7 @@ interface DashboardProps {
   onLogout: () => void;
   onCreateNew: () => void;
   onResumeCourse: (course: Course) => void;
+  onAppendLesson?: (courseId: number, courseTitle: string) => void;
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({
@@ -141,6 +142,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onLogout,
   onCreateNew,
   onResumeCourse,
+  onAppendLesson
 }) => {
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
@@ -263,13 +265,24 @@ export const Dashboard: React.FC<DashboardProps> = ({
                             ></div>
                           </div>
                           
-                          <button
-                            onClick={() => onResumeCourse(course)}
-                            className="w-full flex items-center justify-center px-4 py-3 bg-slate-800 hover:bg-emerald-500 text-white rounded-xl font-bold transition-all duration-200 group/btn"
-                          >
-                            <Play className="w-4 h-4 mr-2 group-hover/btn:scale-110 transition-transform" />
-                            {currentStep === 0 ? 'Start Course' : 'Resume Learning'}
-                          </button>
+                          <div className="flex flex-col space-y-2">
+                            <button
+                              onClick={() => onResumeCourse(course)}
+                              className="w-full flex items-center justify-center px-4 py-3 bg-slate-800 hover:bg-emerald-500 text-white rounded-xl font-bold transition-all duration-200 group/btn"
+                            >
+                              <Play className="w-4 h-4 mr-2 group-hover/btn:scale-110 transition-transform" />
+                              {currentStep === 0 ? 'Start Course' : 'Resume Learning'}
+                            </button>
+                            {onAppendLesson && (
+                              <button
+                                onClick={() => onAppendLesson(course.id, course.title)}
+                                className="w-full flex items-center justify-center px-4 py-3 bg-slate-800/50 hover:bg-slate-700 text-slate-300 rounded-xl font-bold transition-all duration-200"
+                              >
+                                <Plus className="w-4 h-4 mr-2" />
+                                Add Chapter
+                              </button>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </motion.div>

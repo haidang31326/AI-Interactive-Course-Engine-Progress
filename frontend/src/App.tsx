@@ -30,6 +30,7 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState('');
+  const [targetCourseId, setTargetCourseId] = useState<number | null>(null);
 
   const [isNotebookOpen, setIsNotebookOpen] = useState(false);
   const [highlights, setHighlights] = useState<Highlight[]>([]);
@@ -110,6 +111,14 @@ function App() {
     setAppState('COURSE_CREATE');
     setFile(null);
     setTitle('');
+    setTargetCourseId(null);
+  };
+
+  const handleAppendLesson = (courseId: number, courseTitle: string) => {
+    setAppState('COURSE_CREATE');
+    setFile(null);
+    setTitle('');
+    setTargetCourseId(courseId);
   };
 
   const handleResumeCourse = (course: Course) => {
@@ -189,13 +198,16 @@ function App() {
 
   const handleGenerateCourse = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!file || !title || !user) return;
+    if (!file || (!title && !targetCourseId) || !user) return;
 
     setIsLoading(true);
     const formData = new FormData();
-    formData.append('title', title);
+    if (title) formData.append('title', title);
     formData.append('file', file);
     formData.append('userId', user.id.toString());
+    if (targetCourseId) {
+      formData.append('courseId', targetCourseId.toString());
+    }
 
     try {
       const response = await axios.post(`${API_BASE}/generate`, formData, {
@@ -230,6 +242,7 @@ function App() {
           onLogout={handleLogout}
           onCreateNew={handleCreateNew}
           onResumeCourse={handleResumeCourse}
+          onAppendLesson={handleAppendLesson}
         />
       );
     }
@@ -254,22 +267,30 @@ function App() {
             <div className="inline-flex items-center justify-center w-16 h-16 bg-indigo-100 text-indigo-600 rounded-full mb-4">
               <BookOpen className="w-8 h-8" />
             </div>
-            <h1 className="text-3xl font-black text-slate-800">AI Course Engine</h1>
-            <p className="text-slate-500 mt-2">Upload a PDF or DOCX textbook and let AI generate an interactive course.</p>
+            <h1 className="text-3xl font-black text-slate-800">
+              {targetCourseId ? "Add Chapter to Course" : "AI Course Engine"}
+            </h1>
+            <p className="text-slate-500 mt-2">
+              {targetCourseId 
+                ? "Upload a PDF or DOCX file to append as a new chapter." 
+                : "Upload a PDF or DOCX textbook and let AI generate an interactive course."}
+            </p>
           </div>
 
           <form onSubmit={handleGenerateCourse} className="space-y-6">
-            <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-1">Course Title</label>
-              <input 
-                type="text" 
-                required
-                value={title}
-                onChange={e => setTitle(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-                placeholder="e.g. Introduction to Spring Boot"
-              />
-            </div>
+            {!targetCourseId && (
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1">Course Title</label>
+                <input 
+                  type="text" 
+                  value={title}
+                  onChange={e => setTitle(e.target.value)}
+                  placeholder="e.g. Introduction to Machine Learning"
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-slate-50"
+                  required
+                />
+              </div>
+            )}
             
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-1">Textbook (PDF / DOCX)</label>
@@ -288,15 +309,17 @@ function App() {
 
             <button 
               type="submit" 
-              disabled={isLoading || !file || !title}
-              className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-lg hover:shadow-xl transition-all disabled:opacity-70 disabled:cursor-not-allowed flex justify-center items-center"
+              disabled={!file || (!title && !targetCourseId) || isLoading}
+              className="w-full bg-indigo-600 text-white font-bold py-4 px-6 rounded-xl hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-all disabled:opacity-50 flex items-center justify-center"
             >
               {isLoading ? (
                 <>
-                  <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                  AI is reading & generating...
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                  {targetCourseId ? "Adding Chapter..." : "Generating Course..."}
                 </>
-              ) : 'Generate Course'}
+              ) : (
+                targetCourseId ? "Add Chapter to Course" : "Generate Course"
+              )}
             </button>
           </form>
         </motion.div>

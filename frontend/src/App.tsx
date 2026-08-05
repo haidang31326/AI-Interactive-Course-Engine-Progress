@@ -423,8 +423,6 @@ function App() {
           <NotebookSidebar
             isOpen={isNotebookOpen}
             onClose={() => setIsNotebookOpen(false)}
-            userId={user.id}
-            courseId={currentCourse.id}
             highlights={highlights}
             onDeleteHighlight={handleDeleteHighlight}
             onUpdateNote={handleUpdateNote}

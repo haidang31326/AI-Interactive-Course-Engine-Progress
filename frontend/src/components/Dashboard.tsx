@@ -212,7 +212,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 </div>
                 <h3 className="text-2xl font-bold text-white mb-2">No courses yet</h3>
                 <p className="text-slate-400 max-w-md mx-auto mb-8">
-                  Upload a PDF textbook and let our AI generate a fully interactive, personalized coding course for you.
+                  Upload a PDF or DOCX textbook and let our AI generate a fully interactive, personalized coding course for you.
                 </p>
                 <button
                   onClick={onCreateNew}
@@ -243,7 +243,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                             {course.title}
                           </h3>
                           <p className="text-sm text-slate-500 font-mono">
-                            {course.description || "Generated from PDF"}
+                            {course.description || "Generated from Document"}
                           </p>
                         </div>
                         

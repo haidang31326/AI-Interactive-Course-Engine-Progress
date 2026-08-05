@@ -26,7 +26,7 @@ public class CourseService {
     @Transactional
     public Course generateCourseFromDocument(String title, MultipartFile file, Long userId) throws IOException {
         // Step 1: Parse the document
-        String rawText = documentParserService.parsePdf(file);
+        String rawText = documentParserService.parseDocument(file);
         
         // Optional chunking could go here. For MVP, we pass the whole text to Gemini 1.5.
         // Limit text length if needed to avoid extreme token usage.

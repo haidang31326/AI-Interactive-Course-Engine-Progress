@@ -199,7 +199,7 @@ function App() {
               <BookOpen className="w-8 h-8" />
             </div>
             <h1 className="text-3xl font-black text-slate-800">AI Course Engine</h1>
-            <p className="text-slate-500 mt-2">Upload a PDF textbook and let AI generate an interactive course.</p>
+            <p className="text-slate-500 mt-2">Upload a PDF or DOCX textbook and let AI generate an interactive course.</p>
           </div>
 
           <form onSubmit={handleGenerateCourse} className="space-y-6">
@@ -216,17 +216,17 @@ function App() {
             </div>
             
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-1">Textbook (PDF)</label>
+              <label className="block text-sm font-semibold text-slate-700 mb-1">Textbook (PDF / DOCX)</label>
               <div className="relative border-2 border-dashed border-slate-300 rounded-xl p-6 text-center hover:border-indigo-500 transition-colors cursor-pointer">
                 <input 
                   type="file" 
-                  accept=".pdf"
+                  accept=".pdf,.docx"
                   required
                   onChange={e => setFile(e.target.files?.[0] || null)}
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                 />
                 <UploadCloud className="w-8 h-8 text-slate-400 mx-auto mb-2" />
-                <span className="text-slate-600 font-medium">{file ? file.name : 'Click or drag PDF to upload'}</span>
+                <span className="text-slate-600 font-medium">{file ? file.name : 'Click or drag PDF/DOCX to upload'}</span>
               </div>
             </div>
 

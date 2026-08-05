@@ -19,7 +19,7 @@ public class CourseController {
 
     @PostMapping("/generate")
     public ResponseEntity<Course> generateCourse(
-            @RequestParam("title") String title,
+            @RequestParam(value = "title", required = false) String title,
             @RequestParam("file") MultipartFile file,
             @RequestParam(value = "userId", required = false) Long userId,
             @RequestParam(value = "courseId", required = false) Long courseId) {

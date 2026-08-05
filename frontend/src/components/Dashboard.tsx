@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import type { Course, User } from '../types';
-import { LogOut, Plus, Play, BookOpen, Loader2, FileText, Search, Trophy, Medal } from 'lucide-react';
+import { LogOut, Plus, Play, BookOpen, Loader2, FileText, Search, Trophy, Medal, Trash2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 // --- SIDEBAR WIDGETS ---
@@ -135,6 +135,7 @@ interface DashboardProps {
   onCreateNew: () => void;
   onResumeCourse: (course: Course) => void;
   onAppendLesson?: (courseId: number, courseTitle: string) => void;
+  onDeleteCourse?: (courseId: number) => void;
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({
@@ -142,7 +143,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onLogout,
   onCreateNew,
   onResumeCourse,
-  onAppendLesson
+  onAppendLesson,
+  onDeleteCourse
 }) => {
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
@@ -244,7 +246,21 @@ export const Dashboard: React.FC<DashboardProps> = ({
                           <h3 className="text-2xl font-bold text-white group-hover:text-emerald-400 transition-colors line-clamp-1 mb-1">
                             {course.title}
                           </h3>
-                          <p className="text-sm text-slate-500 font-mono">
+                          {onDeleteCourse && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (window.confirm('Are you sure you want to delete this course? This action cannot be undone.')) {
+                                  onDeleteCourse(course.id);
+                                }
+                              }}
+                              className="absolute top-4 right-4 p-2 text-slate-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all rounded-full hover:bg-red-400/10"
+                              title="Delete course"
+                            >
+                              <Trash2 className="w-5 h-5" />
+                            </button>
+                          )}
+                          <p className="text-sm text-slate-500 font-mono pr-8">
                             {course.description || "Generated from Document"}
                           </p>
                         </div>

@@ -5,6 +5,7 @@ import com.ai.courseengine.model.Course;
 import com.ai.courseengine.model.Lesson;
 import com.ai.courseengine.repository.CourseRepository;
 import com.ai.courseengine.repository.LessonRepository;
+import com.ai.courseengine.repository.HighlightRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,6 +23,7 @@ public class CourseService {
     private final GeminiAiService geminiAiService;
     private final CourseRepository courseRepository;
     private final LessonRepository lessonRepository;
+    private final HighlightRepository highlightRepository;
 
     @Transactional
     public Course generateCourseFromDocument(String title, MultipartFile file, Long userId, Long courseId) throws IOException {
@@ -63,6 +65,15 @@ public class CourseService {
         // Fetch course again to ensure lazy loaded relations or just return it
         course.getLessons().add(lesson);
         return course;
+    }
+
+    @Transactional
+    public void deleteCourse(Long courseId) {
+        if (!courseRepository.existsById(courseId)) {
+            throw new RuntimeException("Course not found");
+        }
+        highlightRepository.deleteByCourseId(courseId);
+        courseRepository.deleteById(courseId);
     }
 
     @Transactional(readOnly = true)

@@ -9,4 +9,5 @@ import java.util.List;
 @Repository
 public interface HighlightRepository extends JpaRepository<Highlight, Long> {
     List<Highlight> findByUserIdAndCourseId(Long userId, Long courseId);
+    void deleteByCourseId(Long courseId);
 }

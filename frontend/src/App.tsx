@@ -121,6 +121,21 @@ function App() {
     setTargetCourseId(courseId);
   };
 
+  const handleDeleteCourse = async (courseId: number) => {
+    try {
+      await axios.delete(`${API_BASE}/${courseId}`);
+      // Hacky way to force Dashboard refresh without global state management:
+      // Toggle appState back and forth to trigger remount, or we can just 
+      // let Dashboard handle its own fetch when it re-renders. 
+      // A full remount is easiest for hackathon:
+      setAppState('AUTH');
+      setTimeout(() => setAppState('DASHBOARD'), 10);
+    } catch (err) {
+      console.error('Failed to delete course', err);
+      alert('Failed to delete course');
+    }
+  };
+
   const handleResumeCourse = (course: Course) => {
     if (course.lessons && course.lessons.length > 0) {
       setBlocks(course.lessons[0].blocks);
@@ -237,12 +252,13 @@ function App() {
 
     if (appState === 'DASHBOARD' && user) {
       return (
-        <Dashboard
-          user={user}
-          onLogout={handleLogout}
-          onCreateNew={handleCreateNew}
+        <Dashboard 
+          user={user} 
+          onLogout={handleLogout} 
+          onCreateNew={handleCreateNew} 
           onResumeCourse={handleResumeCourse}
           onAppendLesson={handleAppendLesson}
+          onDeleteCourse={handleDeleteCourse}
         />
       );
     }

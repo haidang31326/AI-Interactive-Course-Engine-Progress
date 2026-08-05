@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Bookmark, Trash2, PenLine } from 'lucide-react';
 import type { Highlight } from '../types';
@@ -14,7 +14,7 @@ interface Props {
 }
 
 export const NotebookSidebar: React.FC<Props> = ({ 
-  isOpen, onClose, userId, courseId, highlights, onDeleteHighlight, onUpdateNote 
+  isOpen, onClose, highlights, onDeleteHighlight, onUpdateNote 
 }) => {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [noteText, setNoteText] = useState("");

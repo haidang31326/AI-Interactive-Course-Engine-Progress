@@ -12,7 +12,7 @@ interface Props {
 const TheoryPane: React.FC<Props> = ({ block, onSaveHighlight }) => {
   const [selection, setSelection] = useState<{ text: string, x: number, y: number } | null>(null);
 
-  const handleMouseUp = (e: React.MouseEvent) => {
+  const handleMouseUp = () => {
     const sel = window.getSelection();
     if (sel && sel.toString().trim().length > 0) {
       const range = sel.getRangeAt(0);

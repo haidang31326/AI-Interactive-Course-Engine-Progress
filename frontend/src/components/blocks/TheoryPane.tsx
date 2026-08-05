@@ -37,7 +37,7 @@ const TheoryPane: React.FC<Props> = ({ block, onSaveHighlight }) => {
   };
 
   useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
+    const handleClickOutside = () => {
       // Allow clicking inside the chat box by stopping propagation on the chat box
       // If event reaches here and chat is open, close it
       setSelection(null);
@@ -165,7 +165,7 @@ const TheoryPane: React.FC<Props> = ({ block, onSaveHighlight }) => {
                         setChatAnswer(data.response || data.error);
                         setIsChatLoading(false);
                       })
-                      .catch(err => {
+                      .catch(() => {
                         setChatAnswer("Network error contacting AI.");
                         setIsChatLoading(false);
                       });

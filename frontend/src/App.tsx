@@ -133,9 +133,9 @@ function App() {
       // A full remount is easiest for hackathon:
       setAppState('LANDING_PAGE');
       setTimeout(() => setAppState('DASHBOARD'), 10);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to delete course', err);
-      alert('Failed to delete course');
+      alert(err.response?.data?.message || 'Không thể xóa khóa học. Vui lòng thử lại.');
     }
   };
 
@@ -280,9 +280,9 @@ function App() {
         
         setAppState('COURSE_PLAYER');
       }
-    } catch (error) {
-      console.error('Error generating course:', error);
-      alert('Failed to generate course. Check backend logs.');
+    } catch (err: any) {
+      console.error('Failed to generate course', err);
+      alert(err.response?.data?.message || 'Quá trình tạo khóa học thất bại. Vui lòng kiểm tra lại file hoặc thử lại sau.');
     } finally {
       setIsLoading(false);
     }

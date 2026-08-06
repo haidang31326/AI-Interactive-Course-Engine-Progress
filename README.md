@@ -1,8 +1,8 @@
-# AI Interactive Course Engine 🚀
+# AI Interactive Course Engine
 
-A cutting-edge, AI-powered interactive learning platform built for the **Hackathon 2026**. This platform instantly transforms static PDF documents into rich, gamified, and interactive courses using Google's Gemini AI.
+A cutting-edge, AI-powered interactive learning platform built for the Hackathon 2026. This platform instantly transforms static PDF documents into rich, gamified, and interactive courses using Google's Gemini AI.
 
-## 🌟 Key Features
+## Key Features
 
 ### 1. Instant AI Course Generation
 - Upload any PDF document (educational material, books, guides).
@@ -11,11 +11,11 @@ A cutting-edge, AI-powered interactive learning platform built for the **Hackath
 
 ### 2. Gamified Interactive Learning
 The generated courses are not just walls of text. AI automatically embeds interactive blocks to test knowledge:
-- 📖 **Theory:** Clean, markdown-formatted reading material.
-- ✏️ **Fill in the Blanks:** Fuzzy-matching inputs to test memory recall.
-- 🤔 **Scenarios:** Multiple-choice situational questions.
-- 💻 **Code Editor:** Live coding environments to practice syntax (triggers automatically for tech topics).
-- 🧩 **Drag & Drop:** Categorization exercises for vocabulary and concepts.
+- **Theory:** Clean, markdown-formatted reading material.
+- **Fill in the Blanks:** Fuzzy-matching inputs to test memory recall.
+- **Scenarios:** Multiple-choice situational questions.
+- **Code Editor:** Live coding environments to practice syntax (triggers automatically for tech topics).
+- **Drag & Drop:** Categorization exercises for vocabulary and concepts.
 
 ### 3. AI Tutor & Smart Notebook
 - **Contextual AI Tutor:** Highlight any confusing text in the lesson and ask the AI Tutor for an explanation directly.

@@ -97,4 +97,49 @@ public class CourseService {
         course.setCurrentStepIndex(stepIndex);
         return courseRepository.save(course);
     }
+
+    @Transactional(readOnly = true)
+    public List<Course> getPublicCourses() {
+        return courseRepository.findByIsPublicTrue();
+    }
+
+    @Transactional
+    public Course togglePublic(Long courseId) {
+        Course course = courseRepository.findById(courseId).orElseThrow(() -> new RuntimeException("Course not found"));
+        course.setIsPublic(course.getIsPublic() == null || !course.getIsPublic());
+        return courseRepository.save(course);
+    }
+
+    @Transactional
+    public Course cloneCourse(Long courseId, Long newUserId) {
+        Course original = courseRepository.findById(courseId)
+                .orElseThrow(() -> new RuntimeException("Course not found"));
+        
+        Course clonedCourse = new Course();
+        clonedCourse.setTitle(original.getTitle());
+        clonedCourse.setDescription(original.getDescription());
+        clonedCourse.setUserId(newUserId);
+        clonedCourse.setCurrentStepIndex(0);
+        clonedCourse.setIsPublic(false); // Cloned courses are private by default
+        
+        // Save to get ID
+        Course savedCourse = courseRepository.save(clonedCourse);
+        
+        for (Lesson originalLesson : original.getLessons()) {
+            Lesson clonedLesson = new Lesson();
+            clonedLesson.setTitle(originalLesson.getTitle());
+            clonedLesson.setOrder(originalLesson.getOrder());
+            clonedLesson.setCourse(savedCourse);
+            
+            // Assuming blocks are serialized to JSON, copying the list reference might be risky if they are mutable,
+            // but since Block objects are generated from JSON and we are saving back to JSON, it should be fine.
+            // For true safety, one would deep copy, but for hackathon this works.
+            clonedLesson.setBlocks(new java.util.ArrayList<>(originalLesson.getBlocks()));
+            
+            lessonRepository.save(clonedLesson);
+            savedCourse.getLessons().add(clonedLesson);
+        }
+        
+        return savedCourse;
+    }
 }

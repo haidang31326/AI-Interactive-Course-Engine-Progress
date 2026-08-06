@@ -19,7 +19,9 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
     @JsonSubTypes.Type(value = ScenarioBlock.class, name = "interactive_scenario"),
     @JsonSubTypes.Type(value = ScenarioBlock.class, name = "scenario"),
     @JsonSubTypes.Type(value = CodeBlock.class, name = "interactive_code_editor"),
-    @JsonSubTypes.Type(value = CodeBlock.class, name = "code_editor")
+    @JsonSubTypes.Type(value = CodeBlock.class, name = "code_editor"),
+    @JsonSubTypes.Type(value = DragDropBlock.class, name = "interactive_drag_drop"),
+    @JsonSubTypes.Type(value = DragDropBlock.class, name = "drag_drop")
 })
 public interface Block {
 }

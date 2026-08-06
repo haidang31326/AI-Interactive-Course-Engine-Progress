@@ -65,14 +65,14 @@ const FillBlankPane: React.FC<Props> = ({ block, onSuccess, onAskHint }) => {
     setTimeout(onSuccess, 2000);
   };
 
-  // Replace {1} with input fields
+  // Replace {1} or [key] with input fields
   const renderQuestionText = () => {
-    const parts = block.questionText.split(/({[\d]+})/g);
+    const parts = block.questionText.split(/(\[[^\]]+\]|\{[\w]+\})/g);
     
     return parts.map((part, index) => {
-      const match = part.match(/{([\d]+)}/);
+      const match = part.match(/\[([^\]]+)\]|\{([\w]+)\}/);
       if (match) {
-        const key = match[1];
+        const key = match[1] || match[2];
         return (
           <input
             key={index}

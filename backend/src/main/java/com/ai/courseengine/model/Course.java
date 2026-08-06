@@ -22,6 +22,9 @@ public class Course {
     
     private Integer currentStepIndex = 0;
 
+    @Column(columnDefinition = "boolean default false")
+    private Boolean isPublic = false;
+
     @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Lesson> lessons = new ArrayList<>();
 }

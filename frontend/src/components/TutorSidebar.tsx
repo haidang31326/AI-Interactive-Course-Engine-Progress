@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Sparkles, Send, Loader2 } from 'lucide-react';
+import { X, Sparkles, Send, Loader2, Bookmark } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
 interface Props {
   isOpen: boolean;
   onClose: () => void;
   contextText: string;
+  onSaveToNotebook?: (text: string) => void;
 }
 
-export const TutorSidebar: React.FC<Props> = ({ isOpen, onClose, contextText }) => {
+export const TutorSidebar: React.FC<Props> = ({ isOpen, onClose, contextText, onSaveToNotebook }) => {
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -106,6 +107,21 @@ export const TutorSidebar: React.FC<Props> = ({ isOpen, onClose, contextText }) 
               {answer && !isLoading && (
                 <div className="bg-purple-50 rounded-xl p-5 shadow-sm border border-purple-100 prose prose-sm max-w-none text-slate-700">
                   <ReactMarkdown>{answer}</ReactMarkdown>
+                  
+                  {onSaveToNotebook && (
+                    <div className="mt-4 pt-4 border-t border-purple-200 flex justify-end">
+                      <button
+                        onClick={() => {
+                          onSaveToNotebook(answer);
+                          alert("Đã lưu lời giải thích vào Notebook!");
+                        }}
+                        className="text-xs font-bold text-purple-600 bg-purple-100 hover:bg-purple-200 px-3 py-1.5 rounded-lg transition-colors flex items-center"
+                      >
+                        <Bookmark className="w-3 h-3 mr-1" />
+                        Lưu vào Notebook
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

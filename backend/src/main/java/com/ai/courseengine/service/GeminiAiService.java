@@ -122,19 +122,20 @@ public class GeminiAiService {
             
             1. "theory_markdown": For teaching concepts. Keep it concise and formatted in markdown.
                Structure: {"type": "theory_markdown", "content": "markdown text", "referenceLink": "https://www.google.com/search?q=..."}
-               
-            2. "interactive_fill_blank": For testing recall. 
-               Structure: {"type": "interactive_fill_blank", "questionText": "The capital of France is {1}.", "correctAnswers": {"1": "Paris"}, "hints": ["It's a city of light"], "referenceLink": "https://www.google.com/search?q=..."}
-               
-            3. "interactive_scenario": For situational testing or multiple choice.
-               Structure: {"type": "interactive_scenario", "scenarioDescription": "A situational question", "options": [{"id": "a", "text": "Option 1", "isCorrect": true}], "explanation": "Why this is correct", "referenceLink": "https://www.google.com/search?q=..."}
-               
-            4. "interactive_code_editor": For coding exercises (CRITICAL if the topic is programming/coding related).
-               Structure: {"type": "interactive_code_editor", "problemStatement": "Write a function...", "startingCode": "def sum(a, b):\n", "expectedCode": "def sum(a, b):\n  return a + b", "language": "python", "hints": ["..."], "referenceLink": "https://www.google.com/search?q=..."}
-            
+               - INTERACTIVE BLOCKS (Choose 1 or 2 per theory block, use a variety):
+              * interactive_fill_blank:
+                Structure: {"type": "interactive_fill_blank", "questionText": "A [fruit] is usually red or green, and keeps the [doctor] away.", "correctAnswers": {"fruit": "apple", "doctor": "doctor"}, "hints": ["..."], "referenceLink": "..."}
+              * interactive_scenario:
+                Structure: {"type": "interactive_scenario", "scenarioDescription": "...", "options": [{"id": "a", "text": "...", "isCorrect": true}], "explanation": "...", "referenceLink": "..."}
+              * interactive_code_editor:
+                Structure: {"type": "interactive_code_editor", "problemStatement": "Write a function...", "startingCode": "def sum(a, b):\n", "expectedCode": "def sum(a, b):\n  return a + b", "language": "python", "hints": ["..."], "referenceLink": "..."}
+              * interactive_drag_drop:
+                Structure: {"type": "interactive_drag_drop", "instruction": "Phân loại các khái niệm sau vào đúng nhóm", "categories": ["Nhóm 1", "Nhóm 2"], "items": [{"id": "item1", "text": "Khái niệm A", "correctCategory": "Nhóm 1"}], "referenceLink": "..."}
+             
             RULES:
+            - CONTENT MODERATION: Before generating the lesson, evaluate the raw text. If the text is violent, sexually explicit, harmful, or completely lacks educational value (e.g., a restaurant menu, random gibberish, non-educational stories), you MUST abort and return exactly this JSON: [{"type": "theory_markdown", "content": "# Lỗi Nội Dung\n\nTài liệu này không phù hợp cho giáo dục hoặc vi phạm Tiêu chuẩn Cộng đồng. Vui lòng tải lên tài liệu học tập hợp lệ."}]
             - You MUST generate a rich, comprehensive course. 
-            - For EVERY theory block, you MUST generate AT LEAST 1 to 2 interactive blocks (choose from fill_blank, scenario, or code_editor).
+            - For EVERY theory block, you MUST generate AT LEAST 1 to 2 interactive blocks (choose from fill_blank, scenario, code_editor, or drag_drop).
             - If the raw text is about programming, you MUST include 'interactive_code_editor' blocks.
             - The lesson MUST alternate logically, but heavily weight towards interactive practice.
             - CRITICAL: Output MUST be 100% valid, strictly parsable JSON. ALWAYS use double quotes for strings and keys. NEVER use backticks (`) or single quotes for JSON keys or values.

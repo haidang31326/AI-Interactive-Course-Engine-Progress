@@ -2,15 +2,19 @@ import React, { useState } from 'react';
 import type { User } from '../types';
 import { auth, googleProvider } from '../firebase';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup } from 'firebase/auth';
+import { ArrowLeft } from 'lucide-react';
 
 interface AuthPaneProps {
   onLoginSuccess: (user: User) => void;
+  onBack?: () => void;
 }
 
-export const AuthPane: React.FC<AuthPaneProps> = ({ onLoginSuccess }) => {
+export const AuthPane: React.FC<AuthPaneProps> = ({ onLoginSuccess, onBack }) => {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [username, setUsername] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -47,6 +51,11 @@ export const AuthPane: React.FC<AuthPaneProps> = ({ onLoginSuccess }) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isLogin && password !== confirmPassword) {
+      setError('Mật khẩu nhập lại không khớp.');
+      return;
+    }
+    
     setError('');
     setLoading(true);
 
@@ -58,7 +67,7 @@ export const AuthPane: React.FC<AuthPaneProps> = ({ onLoginSuccess }) => {
         userCredential = await createUserWithEmailAndPassword(auth, email, password);
       }
       
-      await syncWithBackend(userCredential.user.uid, userCredential.user.email, userCredential.user.displayName);
+      await syncWithBackend(userCredential.user.uid, userCredential.user.email, !isLogin && username ? username : userCredential.user.displayName);
     } catch (err: any) {
       setError('Quá trình xác thực bị lỗi. Xin vui lòng thử lại.');
       setLoading(false);
@@ -78,7 +87,16 @@ export const AuthPane: React.FC<AuthPaneProps> = ({ onLoginSuccess }) => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-950 font-sans">
+    <div className="min-h-screen flex items-center justify-center bg-slate-950 font-sans relative">
+      {onBack && (
+        <button
+          onClick={onBack}
+          className="absolute top-8 left-8 flex items-center text-slate-400 hover:text-white transition-colors"
+        >
+          <ArrowLeft className="w-5 h-5 mr-2" />
+          Back to Home
+        </button>
+      )}
       <div className="bg-slate-900 border border-slate-800 p-10 rounded-3xl shadow-2xl w-full max-w-md relative overflow-hidden">
         {/* Decorative background elements */}
         <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
@@ -119,6 +137,21 @@ export const AuthPane: React.FC<AuthPaneProps> = ({ onLoginSuccess }) => {
           </div>
 
           <form onSubmit={handleSubmit}>
+            {!isLogin && (
+              <div className="mb-4">
+                <label className="block text-slate-300 text-sm font-bold mb-2">
+                  Username
+                </label>
+                <input
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl py-3 px-4 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all"
+                  placeholder="e.g. John Doe"
+                  required={!isLogin}
+                />
+              </div>
+            )}
             <div className="mb-4">
               <label className="block text-slate-300 text-sm font-bold mb-2">
                 Email Address
@@ -132,7 +165,7 @@ export const AuthPane: React.FC<AuthPaneProps> = ({ onLoginSuccess }) => {
                 required
               />
             </div>
-            <div className="mb-6">
+            <div className={`mb-${isLogin ? '6' : '4'}`}>
               <label className="block text-slate-300 text-sm font-bold mb-2">
                 Password
               </label>
@@ -145,6 +178,21 @@ export const AuthPane: React.FC<AuthPaneProps> = ({ onLoginSuccess }) => {
                 required
               />
             </div>
+            {!isLogin && (
+              <div className="mb-6">
+                <label className="block text-slate-300 text-sm font-bold mb-2">
+                  Confirm Password
+                </label>
+                <input
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl py-3 px-4 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all"
+                  placeholder="••••••••"
+                  required={!isLogin}
+                />
+              </div>
+            )}
             <button
               type="submit"
               disabled={loading}

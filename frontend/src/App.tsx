@@ -5,21 +5,22 @@ import TheoryPane from './components/blocks/TheoryPane';
 import FillBlankPane from './components/blocks/FillBlankPane';
 import ScenarioPane from './components/blocks/ScenarioPane';
 import CodePane from './components/blocks/CodePane';
-import type { TheoryBlock, FillBlankBlock, ScenarioBlock, CodeBlock, Block, User, Course } from './types';
+import { DragDropPane } from './components/DragDropPane';
+import type { User, Course, Block, TheoryBlock, FillBlankBlock, ScenarioBlock, CodeBlock, DragDropBlock, Highlight } from './types';
 import { BookOpen, UploadCloud, Loader2, ArrowLeft, Bookmark, Sparkles } from 'lucide-react';
 import { AuthPane } from './components/AuthPane';
 import { Dashboard } from './components/Dashboard';
 import { GlobalPomodoro } from './components/GlobalPomodoro';
 import { NotebookSidebar } from './components/NotebookSidebar';
 import { TutorSidebar } from './components/TutorSidebar';
-import type { Highlight } from './types';
+import { LandingPage } from './components/LandingPage';
 
 const API_BASE = 'http://localhost:8080/api/courses';
 
-type AppState = 'AUTH' | 'DASHBOARD' | 'COURSE_PLAYER' | 'COURSE_CREATE';
+type AppState = 'LANDING_PAGE' | 'AUTH' | 'DASHBOARD' | 'COURSE_PLAYER' | 'COURSE_CREATE';
 
 function App() {
-  const [appState, setAppState] = useState<AppState>('AUTH');
+  const [appState, setAppState] = useState<AppState>('LANDING_PAGE');
   const [user, setUser] = useState<User | null>(null);
 
   const [blocks, setBlocks] = useState<Block[]>([]);
@@ -31,12 +32,14 @@ function App() {
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState('');
   const [targetCourseId, setTargetCourseId] = useState<number | null>(null);
+  const [maxReachedIndex, setMaxReachedIndex] = useState<number>(0);
 
   const [isNotebookOpen, setIsNotebookOpen] = useState(false);
   const [highlights, setHighlights] = useState<Highlight[]>([]);
 
   const [isTutorOpen, setIsTutorOpen] = useState(false);
   const [tutorContext, setTutorContext] = useState("");
+  const [isPreviewMode, setIsPreviewMode] = useState(false);
 
   useEffect(() => {
     if (user && currentCourse) {
@@ -104,7 +107,7 @@ function App() {
   const handleLogout = () => {
     setUser(null);
     localStorage.removeItem('user');
-    setAppState('AUTH');
+    setAppState('LANDING_PAGE');
   };
 
   const handleCreateNew = () => {
@@ -128,7 +131,7 @@ function App() {
       // Toggle appState back and forth to trigger remount, or we can just 
       // let Dashboard handle its own fetch when it re-renders. 
       // A full remount is easiest for hackathon:
-      setAppState('AUTH');
+      setAppState('LANDING_PAGE');
       setTimeout(() => setAppState('DASHBOARD'), 10);
     } catch (err) {
       console.error('Failed to delete course', err);
@@ -137,6 +140,7 @@ function App() {
   };
 
   const handleResumeCourse = (course: Course) => {
+    setIsPreviewMode(false);
     if (course.lessons && course.lessons.length > 0) {
       const allBlocks = course.lessons.reduce((acc: Block[], lesson) => [...acc, ...(lesson.blocks || [])], []);
       setBlocks(allBlocks);
@@ -145,14 +149,30 @@ function App() {
     }
     setCurrentCourse(course);
     setCurrentStepIndex(course.currentStepIndex || 0);
+    setMaxReachedIndex(course.currentStepIndex || 0);
     
     // Assume all previous steps are completed if we resume at a specific index
     const previouslyCompleted = new Set<number>();
-    for (let i = 0; i < (course.currentStepIndex || 0); i++) {
+    for (let i = 0; i <= (course.currentStepIndex || 0); i++) {
       previouslyCompleted.add(i);
     }
     setCompletedSteps(previouslyCompleted);
     
+    setAppState('COURSE_PLAYER');
+  };
+
+  const handlePreviewCourse = (course: Course) => {
+    setIsPreviewMode(true);
+    if (course.lessons && course.lessons.length > 0) {
+      const allBlocks = course.lessons.reduce((acc: Block[], lesson) => [...acc, ...(lesson.blocks || [])], []);
+      setBlocks(allBlocks);
+    } else {
+      setBlocks([]); 
+    }
+    setCurrentCourse(course);
+    setCurrentStepIndex(0); // Start from beginning for preview
+    setMaxReachedIndex(0);
+    setCompletedSteps(new Set());
     setAppState('COURSE_PLAYER');
   };
 
@@ -167,8 +187,16 @@ function App() {
   }, [currentStepIndex, currentBlock, completedSteps]);
 
   const saveProgress = async (courseId: number, index: number) => {
+    if (isPreviewMode) return; // Do not save progress in preview mode
+    
+    const newMax = Math.max(maxReachedIndex, index);
+    if (newMax > maxReachedIndex) {
+      setMaxReachedIndex(newMax);
+    }
+
     try {
-      await axios.put(`${API_BASE}/${courseId}/progress?stepIndex=${index}`);
+      // Save the highest step reached, not the current one we nav to
+      await axios.put(`${API_BASE}/${courseId}/progress?stepIndex=${newMax}`);
     } catch (err) {
       console.error('Failed to save progress', err);
     }
@@ -215,6 +243,7 @@ function App() {
   const handleGenerateCourse = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!file || (!title && !targetCourseId) || !user) return;
+    if (isLoading) return; // Anti-spam protection
 
     setIsLoading(true);
     const formData = new FormData();
@@ -260,8 +289,12 @@ function App() {
   };
 
   const renderContent = () => {
+    if (appState === 'LANDING_PAGE') {
+      return <LandingPage onLoginClick={() => setAppState('AUTH')} />;
+    }
+
     if (appState === 'AUTH') {
-      return <AuthPane onLoginSuccess={handleLoginSuccess} />;
+      return <AuthPane onLoginSuccess={handleLoginSuccess} onBack={() => setAppState('LANDING_PAGE')} />;
     }
 
     if (appState === 'DASHBOARD' && user) {
@@ -271,6 +304,7 @@ function App() {
           onLogout={handleLogout} 
           onCreateNew={handleCreateNew} 
           onResumeCourse={handleResumeCourse}
+          onPreviewCourse={handlePreviewCourse}
           onAppendLesson={handleAppendLesson}
           onDeleteCourse={handleDeleteCourse}
         />
@@ -329,7 +363,20 @@ function App() {
                   type="file" 
                   accept=".pdf,.docx"
                   required
-                  onChange={e => setFile(e.target.files?.[0] || null)}
+                  onChange={e => {
+                    const selectedFile = e.target.files?.[0];
+                    if (selectedFile) {
+                      if (selectedFile.size > 10 * 1024 * 1024) { // 10MB limit
+                        alert("File quá lớn! Vui lòng tải lên file nhỏ hơn 10MB để tiết kiệm Token bạn nhé.");
+                        e.target.value = ''; // Reset input
+                        setFile(null);
+                      } else {
+                        setFile(selectedFile);
+                      }
+                    } else {
+                      setFile(null);
+                    }
+                  }}
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                 />
                 <UploadCloud className="w-8 h-8 text-slate-400 mx-auto mb-2" />
@@ -372,7 +419,10 @@ function App() {
               <ArrowLeft className="w-6 h-6" />
             </button>
             <BookOpen className="w-8 h-8" />
-            <h1 className="text-2xl font-black tracking-tight">{currentCourse?.title || 'Course Player'}</h1>
+            <h1 className="text-2xl font-black tracking-tight">
+              {isPreviewMode && <span className="text-sm font-bold text-orange-500 bg-orange-100 px-3 py-1 rounded-full mr-3 align-middle">PREVIEW</span>}
+              {currentCourse?.title || 'Course Player'}
+            </h1>
           </div>
           
           <div className="flex items-center space-x-4">
@@ -386,16 +436,37 @@ function App() {
               <Sparkles className="w-4 h-4 mr-1.5" />
               Ask AI
             </button>
-            <button
-              onClick={() => setIsNotebookOpen(true)}
-              className="flex items-center text-sm font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-4 py-1.5 rounded-full transition-colors border border-indigo-100"
+            {!isPreviewMode && (
+              <button
+                onClick={() => setIsNotebookOpen(true)}
+                className="flex items-center text-sm font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-4 py-1.5 rounded-full transition-colors border border-indigo-100"
+              >
+                <Bookmark className="w-4 h-4 mr-1.5" />
+                Notebook ({highlights.length})
+              </button>
+            )}
+            <select
+              value={currentStepIndex}
+              onChange={(e) => {
+                const newIndex = parseInt(e.target.value);
+                setCurrentStepIndex(newIndex);
+              }}
+              className="text-sm font-medium text-slate-700 bg-slate-100 px-4 py-1.5 rounded-full border-none focus:ring-2 focus:ring-indigo-500 cursor-pointer hover:bg-slate-200 transition-colors"
             >
-              <Bookmark className="w-4 h-4 mr-1.5" />
-              Notebook ({highlights.length})
-            </button>
-            <div className="text-sm font-medium text-slate-500 bg-slate-100 px-4 py-1.5 rounded-full">
-              Progress: {currentStepIndex + 1} / {blocks.length}
-            </div>
+              {blocks.map((b, idx) => {
+                const label = b.type === 'theory_markdown' ? 'Lý thuyết' : 
+                              b.type === 'interactive_fill_blank' ? 'Điền từ' :
+                              b.type === 'interactive_scenario' ? 'Tình huống' :
+                              b.type === 'interactive_code_editor' ? 'Lập trình' :
+                              b.type === 'interactive_drag_drop' ? 'Kéo thả' : 'Bài tập';
+                const isLocked = idx > maxReachedIndex && !isPreviewMode;
+                return (
+                  <option key={idx} value={idx} disabled={isLocked}>
+                    Bước {idx + 1}: {label} {isLocked ? '(🔒)' : ''}
+                  </option>
+                );
+              })}
+            </select>
           </div>
         </header>
 
@@ -445,6 +516,15 @@ function App() {
                           if (index === currentStepIndex) handleInteractiveSuccess();
                         }} 
                         onAskHint={(q) => handleAskAI("I'm stuck on this coding exercise. Can you give me a subtle hint without writing the code for me? Instruction: " + q)}
+                      />
+                    )}
+                    {b.type === 'interactive_drag_drop' && (
+                      <DragDropPane 
+                        block={b as DragDropBlock} 
+                        onSuccess={() => {
+                          if (index === currentStepIndex) handleInteractiveSuccess();
+                        }} 
+                        onAskHint={(q) => handleAskAI("I'm stuck on this drag and drop exercise. Can you give me a subtle hint? Context: " + q)}
                       />
                     )}
                   </div>
@@ -509,6 +589,7 @@ function App() {
           isOpen={isTutorOpen}
           onClose={() => setIsTutorOpen(false)}
           contextText={tutorContext}
+          onSaveToNotebook={(text) => handleSaveHighlight("AI Giải thích: " + text.substring(0, 50) + "...\n" + text)}
         />
       </div>
       );
@@ -520,7 +601,7 @@ function App() {
   return (
     <>
       {renderContent()}
-      {user && appState !== 'AUTH' && <GlobalPomodoro />}
+      {user && appState !== 'AUTH' && appState !== 'LANDING_PAGE' && <GlobalPomodoro />}
     </>
   );
 }

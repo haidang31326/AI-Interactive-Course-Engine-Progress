@@ -49,6 +49,32 @@ public class CourseController {
         return ResponseEntity.ok(courseService.getCoursesByUserId(userId));
     }
 
+    @GetMapping("/community")
+    public ResponseEntity<List<Course>> getCommunityCourses() {
+        return ResponseEntity.ok(courseService.getPublicCourses());
+    }
+
+    @PutMapping("/{courseId}/toggle-public")
+    public ResponseEntity<Course> togglePublic(@PathVariable Long courseId) {
+        try {
+            return ResponseEntity.ok(courseService.togglePublic(courseId));
+        } catch (Exception e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @PostMapping("/{courseId}/clone")
+    public ResponseEntity<Course> cloneCourse(
+            @PathVariable Long courseId,
+            @RequestParam("userId") Long userId) {
+        try {
+            Course clonedCourse = courseService.cloneCourse(courseId, userId);
+            return ResponseEntity.ok(clonedCourse);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
     @PutMapping("/{courseId}/progress")
     public ResponseEntity<Course> saveProgress(
             @PathVariable Long courseId, 

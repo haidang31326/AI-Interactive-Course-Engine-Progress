@@ -1,4 +1,4 @@
-export type BlockType = 'theory_markdown' | 'interactive_fill_blank' | 'interactive_scenario' | 'interactive_code_editor';
+export type BlockType = 'theory_markdown' | 'interactive_fill_blank' | 'interactive_scenario' | 'interactive_code_editor' | 'interactive_drag_drop';
 
 export interface BaseBlock {
   type: BlockType;
@@ -39,7 +39,14 @@ export interface CodeBlock extends BaseBlock {
   hints?: string[];
 }
 
-export type Block = TheoryBlock | FillBlankBlock | ScenarioBlock | CodeBlock;
+export interface DragDropBlock extends BaseBlock {
+  type: 'interactive_drag_drop';
+  instruction: string;
+  categories: string[];
+  items: { id: string; text: string; correctCategory: string }[];
+}
+
+export type Block = TheoryBlock | FillBlankBlock | ScenarioBlock | CodeBlock | DragDropBlock;
 
 export interface User {
   id: number;
@@ -51,6 +58,8 @@ export interface Course {
   title: string;
   description: string;
   currentStepIndex: number;
+  userId?: number;
+  isPublic?: boolean;
   lessons: Lesson[];
 }
 

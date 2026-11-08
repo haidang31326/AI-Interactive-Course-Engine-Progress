@@ -16,9 +16,32 @@ spring:
     multipart:
       max-file-size: 50MB
       max-request-size: 50MB
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: course-engine-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
 
-# Gemini API configuration
+      # Gemini API configuration
 gemini:
   api:
     key: ${GEMINI_API_KEY}
     url: "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      geminiAiService:
+        sliding-window-size: 5		 # Theo dõi 5 lần gọi gần nhất
+        minimum-number-of-calls: 3           # Cần ít nhất 3 lần gọi để bắt đầu tính toán
+        failure-rate-threshold: 50           # Nếu 50% số lần gọi bị lỗi -> Cầu dao "NHẢY" (OPEN)
+        wait-duration-in-open-state: 10000ms # Giữ trạng thái OPEN trong 10s để server nghỉ ngơi
+        permitted-number-of-calls-in-half-open-state: 2 # Cho 2 request đi qua thử khi ở HALF_OPEN
+        automatic-transition-from-open-to-half-open-enabled: true

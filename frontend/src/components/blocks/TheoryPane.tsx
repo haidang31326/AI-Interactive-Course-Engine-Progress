@@ -43,10 +43,10 @@ const TheoryPane: React.FC<Props> = ({ block, onSaveHighlight, onAskAI }) => {
       initial={{ opacity: 0, x: -20 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.5 }}
-      className="prose prose-lg dark:prose-invert max-w-none text-slate-800 relative"
+      className="prose prose-lg dark:prose-invert max-w-none text-slate-800 relative prose-code:before:content-none prose-code:after:content-none"
       onMouseUp={handleMouseUp}
     >
-      <div className="prose prose-slate prose-lg max-w-none text-slate-700 leading-relaxed mb-6">
+      <div className="prose prose-slate prose-lg max-w-none text-slate-700 leading-relaxed mb-6 prose-code:before:content-none prose-code:after:content-none">
         <ReactMarkdown>{block.content}</ReactMarkdown>
       </div>
 

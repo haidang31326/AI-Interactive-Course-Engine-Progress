@@ -19,6 +19,8 @@ public class Course {
     private String description;
 
     private Long userId;
+    @Column(nullable = false)
+    private String status = "PENDING";
     
     private Integer currentStepIndex = 0;
 

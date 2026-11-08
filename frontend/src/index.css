@@ -13,3 +13,34 @@ body {
   min-height: 100vh;
   background-color: #f8fafc;
 }
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-4px); }
+  40%, 80% { transform: translateX(4px); }
+}
+
+.animate-shake {
+  animation: shake 0.4s ease-in-out;
+}
+
+/* Xóa bỏ dấu backtick mặc định khó chịu của @tailwindcss/typography */
+.prose code::before,
+.prose code::after {
+  content: "" !important;
+}
+
+/* Tút lại các khối code inline thành dạng 'viên thuốc' bo góc tinh tế */
+.prose :not(pre) > code {
+  background-color: #eef2ff !important;
+  color: #4f46e5 !important;
+  padding: 0.15rem 0.45rem !important;
+  border-radius: 0.375rem !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+  font-size: 0.875em !important;
+  font-weight: 600 !important;
+  border: 1px solid #e0e7ff !important;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.03) !important;
+}
+
+

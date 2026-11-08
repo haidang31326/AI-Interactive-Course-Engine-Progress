@@ -14,10 +14,11 @@ import { GlobalPomodoro } from './components/GlobalPomodoro';
 import { NotebookSidebar } from './components/NotebookSidebar';
 import { TutorSidebar } from './components/TutorSidebar';
 import { LandingPage } from './components/LandingPage';
+import { CourseGenerationLoader } from './components/CourseGenerationLoader';
 
 const API_BASE = 'http://localhost:8080/api/courses';
 
-type AppState = 'LANDING_PAGE' | 'AUTH' | 'DASHBOARD' | 'COURSE_PLAYER' | 'COURSE_CREATE';
+type AppState = 'LANDING_PAGE' | 'AUTH' | 'DASHBOARD' | 'COURSE_PLAYER' | 'COURSE_CREATE' | 'COURSE_GENERATING';
 
 function App() {
   const [appState, setAppState] = useState<AppState>('LANDING_PAGE');
@@ -33,6 +34,8 @@ function App() {
   const [title, setTitle] = useState('');
   const [targetCourseId, setTargetCourseId] = useState<number | null>(null);
   const [maxReachedIndex, setMaxReachedIndex] = useState<number>(0);
+  const [generatingCourseId, setGeneratingCourseId] = useState<number | null>(null);
+  const [generatingTitle, setGeneratingTitle] = useState<string>('');
 
   const [isNotebookOpen, setIsNotebookOpen] = useState(false);
   const [highlights, setHighlights] = useState<Highlight[]>([]);
@@ -258,27 +261,16 @@ function App() {
       const response = await axios.post(`${API_BASE}/generate`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
-      const generatedCourse = response.data;
-      setCurrentCourse(generatedCourse);
+      const data = response.data;
       
-      if (generatedCourse.lessons && generatedCourse.lessons.length > 0) {
-        const allBlocks = generatedCourse.lessons.reduce((acc: Block[], lesson: any) => [...acc, ...(lesson.blocks || [])], []);
-        setBlocks(allBlocks);
-        
-        // If appending a new chapter, start from the beginning of the NEW chapter
-        if (targetCourseId) {
-          const previousBlocksCount = generatedCourse.lessons.slice(0, -1).reduce((acc: number, lesson: any) => acc + (lesson.blocks?.length || 0), 0);
-          setCurrentStepIndex(previousBlocksCount);
-          // Set previously completed steps up to this point
-          const previouslyCompleted = new Set<number>();
-          for (let i = 0; i < previousBlocksCount; i++) previouslyCompleted.add(i);
-          setCompletedSteps(previouslyCompleted);
-        } else {
-          setCurrentStepIndex(0);
-          setCompletedSteps(new Set());
-        }
-        
-        setAppState('COURSE_PLAYER');
+      // Backend bất đồng bộ trả về 202 Accepted: { courseId: 11, status: "PENDING", ... }
+      if (data && data.courseId) {
+        setGeneratingCourseId(data.courseId);
+        setGeneratingTitle(title || file.name);
+        setAppState('COURSE_GENERATING');
+      } else if (data && data.lessons && data.lessons.length > 0) {
+        // Fallback tương thích ngược nếu backend trả về cả cục course
+        handleResumeCourse(data);
       }
     } catch (err: any) {
       console.error('Failed to generate course', err);
@@ -307,6 +299,27 @@ function App() {
           onPreviewCourse={handlePreviewCourse}
           onAppendLesson={handleAppendLesson}
           onDeleteCourse={handleDeleteCourse}
+        />
+      );
+    }
+
+    if (appState === 'COURSE_GENERATING' && generatingCourseId) {
+      return (
+        <CourseGenerationLoader
+          courseId={generatingCourseId}
+          courseTitle={generatingTitle}
+          onSuccess={(completedCourse) => {
+            handleResumeCourse(completedCourse);
+            setGeneratingCourseId(null);
+          }}
+          onCancel={() => {
+            setAppState('DASHBOARD');
+            setGeneratingCourseId(null);
+          }}
+          onRetry={() => {
+            setAppState('COURSE_CREATE');
+            setGeneratingCourseId(null);
+          }}
         />
       );
     }
@@ -404,9 +417,31 @@ function App() {
       );
     }
 
-    if (appState === 'COURSE_PLAYER' && blocks.length > 0) {
-    const theoryBlock = getLatestTheoryBlock();
-    const isInteractiveNow = currentBlock.type !== 'theory_markdown';
+    if (appState === 'COURSE_PLAYER') {
+      if (!blocks || blocks.length === 0) {
+        return (
+          <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 font-sans p-6 text-center">
+            <div className="w-16 h-16 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center mb-4 shadow-sm">
+              <BookOpen className="w-8 h-8" />
+            </div>
+            <h2 className="text-2xl font-black text-slate-800 mb-2">Chưa có nội dung bài học</h2>
+            <p className="text-slate-500 max-w-md mb-6 text-sm">
+              Tài liệu bạn tải lên có thể quá ngắn hoặc chưa trích xuất được khối bài học tương tác nào. Bạn hãy thử tải lên tài liệu chi tiết hơn nhé!
+            </p>
+            <button
+              onClick={() => setAppState('DASHBOARD')}
+              className="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition-all shadow-md hover:-translate-y-0.5"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Quay lại Dashboard
+            </button>
+          </div>
+        );
+      }
+
+      const theoryBlock = getLatestTheoryBlock();
+      const activeBlock = blocks[currentStepIndex] || blocks[0];
+      const isInteractiveNow = Boolean(activeBlock?.type && activeBlock.type !== 'theory_markdown');
 
     return (
       <div className="h-screen flex flex-col font-sans bg-slate-50 overflow-hidden">
@@ -475,7 +510,7 @@ function App() {
             <AnimatePresence mode="wait">
               {theoryBlock && (
                 <TheoryPane 
-                  key={`theory-${theoryBlock.content.substring(0, 10)}`} 
+                  key={`theory-${theoryBlock.content ? theoryBlock.content.substring(0, 10) : 'default'}`} 
                   block={theoryBlock} 
                   onSaveHighlight={handleSaveHighlight}
                   onAskAI={handleAskAI}

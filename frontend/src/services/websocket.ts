@@ -22,7 +22,9 @@ export function subscribeCourseProgress(
   onProgress: (data: CourseProgressMessage) => void,
   onError?: (error: any) => void
 ): () => void {
-  const wsUrl = 'http://localhost:8080/ws-course';
+  const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
+  const serverOrigin = apiBase.replace(/\/api\/?$/, '');
+  const wsUrl = import.meta.env.VITE_WS_URL || `${serverOrigin}/ws-course`;
 
   const client = new Client({
     // Sử dụng SockJS làm fallback nếu trình duyệt không hỗ trợ WebSocket thuần

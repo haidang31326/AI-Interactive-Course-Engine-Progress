@@ -1,13 +1,12 @@
 import { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import axios from 'axios';
 import TheoryPane from './components/blocks/TheoryPane';
 import FillBlankPane from './components/blocks/FillBlankPane';
 import ScenarioPane from './components/blocks/ScenarioPane';
 import CodePane from './components/blocks/CodePane';
 import { DragDropPane } from './components/DragDropPane';
 import type { User, Course, Block, TheoryBlock, FillBlankBlock, ScenarioBlock, CodeBlock, DragDropBlock, Highlight } from './types';
-import { BookOpen, UploadCloud, Loader2, ArrowLeft, Bookmark, Sparkles } from 'lucide-react';
+import { BookOpen, UploadCloud, Loader2, ArrowLeft, Bookmark, Sparkles, ChevronRight, ChevronLeft, CheckCircle2 } from 'lucide-react';
 import { AuthPane } from './components/AuthPane';
 import { Dashboard } from './components/Dashboard';
 import { GlobalPomodoro } from './components/GlobalPomodoro';
@@ -15,8 +14,9 @@ import { NotebookSidebar } from './components/NotebookSidebar';
 import { TutorSidebar } from './components/TutorSidebar';
 import { LandingPage } from './components/LandingPage';
 import { CourseGenerationLoader } from './components/CourseGenerationLoader';
-
-const API_BASE = 'http://localhost:8080/api/courses';
+import { auth } from './firebase';
+import { onAuthStateChanged } from 'firebase/auth';
+import { courseApi, highlightApi } from './services/api';
 
 type AppState = 'LANDING_PAGE' | 'AUTH' | 'DASHBOARD' | 'COURSE_PLAYER' | 'COURSE_CREATE' | 'COURSE_GENERATING';
 
@@ -41,49 +41,78 @@ function App() {
   const [highlights, setHighlights] = useState<Highlight[]>([]);
 
   const [isTutorOpen, setIsTutorOpen] = useState(false);
-  const [tutorContext, setTutorContext] = useState("");
+  const [tutorContext, setTutorContext] = useState('');
   const [isPreviewMode, setIsPreviewMode] = useState(false);
 
+  // Lắng nghe trạng thái đăng nhập Firebase và duy trì Bearer Token
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
+      if (fbUser) {
+        try {
+          const token = await fbUser.getIdToken();
+          localStorage.setItem('token', token);
+          const storedUser = localStorage.getItem('user');
+          if (storedUser) {
+            setUser(JSON.parse(storedUser));
+            if (appState === 'LANDING_PAGE' || appState === 'AUTH') {
+              setAppState('DASHBOARD');
+            }
+          }
+        } catch (err) {
+          console.warn('[App] Lỗi cập nhật Firebase token:', err);
+        }
+      }
+    });
+    return () => unsubscribe();
+  }, [appState]);
+
+  // Tải danh sách highlight của khóa học
   useEffect(() => {
     if (user && currentCourse) {
-      fetch(`http://localhost:8080/api/highlights?userId=${user.id}&courseId=${currentCourse.id}`)
-        .then(res => res.json())
-        .then(data => setHighlights(data))
-        .catch(err => console.error(err));
+      highlightApi
+        .getHighlights(user.id, currentCourse.id)
+        .then((data) => setHighlights(data || []))
+        .catch((err) => console.error('[App] Lỗi tải highlights:', err));
     }
   }, [user, currentCourse]);
 
-  const handleSaveHighlight = (text: string) => {
+  const handleSaveHighlight = async (text: string) => {
     if (!user || !currentCourse) return;
-    const highlight = { userId: user.id, courseId: currentCourse.id, text };
-    fetch('http://localhost:8080/api/highlights', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(highlight)
-    })
-      .then(res => res.json())
-      .then(data => setHighlights([...highlights, data]))
-      .catch(err => console.error(err));
+    try {
+      const created = await highlightApi.saveHighlight({
+        userId: user.id,
+        courseId: currentCourse.id,
+        text,
+      });
+      setHighlights((prev) => [...prev, created]);
+    } catch (err) {
+      console.error('[App] Lỗi lưu highlight:', err);
+    }
   };
 
-  const handleDeleteHighlight = (id: number) => {
-    fetch(`http://localhost:8080/api/highlights/${id}`, { method: 'DELETE' })
-      .then(() => setHighlights(highlights.filter(h => h.id !== id)))
-      .catch(err => console.error(err));
+  const handleDeleteHighlight = async (id: number) => {
+    try {
+      await highlightApi.deleteHighlight(id);
+      setHighlights((prev) => prev.filter((h) => h.id !== id));
+    } catch (err) {
+      console.error('[App] Lỗi xóa highlight:', err);
+    }
   };
 
-  const handleUpdateNote = (id: number, note: string) => {
-    const highlight = highlights.find(h => h.id === id);
-    if (!highlight) return;
-    const updated = { ...highlight, note };
-    fetch('http://localhost:8080/api/highlights', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(updated)
-    })
-      .then(res => res.json())
-      .then(data => setHighlights(highlights.map(h => h.id === id ? data : h)))
-      .catch(err => console.error(err));
+  const handleUpdateNote = async (id: number, note: string) => {
+    const highlight = highlights.find((h) => h.id === id);
+    if (!highlight || !user || !currentCourse) return;
+    try {
+      const updated = await highlightApi.saveHighlight({
+        ...highlight,
+        userId: user.id,
+        courseId: currentCourse.id,
+        note,
+      });
+      setHighlights((prev) => prev.map((h) => (h.id === id ? updated : h)));
+    } catch (err) {
+      console.error('[App] Lỗi cập nhật ghi chú:', err);
+    }
   };
 
   const handleAskAI = (text: string) => {
@@ -93,23 +122,21 @@ function App() {
 
   const currentBlock = blocks[currentStepIndex];
 
-  useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-      setAppState('DASHBOARD');
-    }
-  }, []);
-
   const handleLoginSuccess = (loggedInUser: User) => {
     setUser(loggedInUser);
     localStorage.setItem('user', JSON.stringify(loggedInUser));
     setAppState('DASHBOARD');
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await auth.signOut();
+    } catch (e) {
+      console.error('[App] Signout error:', e);
+    }
     setUser(null);
     localStorage.removeItem('user');
+    localStorage.removeItem('token');
     setAppState('LANDING_PAGE');
   };
 
@@ -129,16 +156,12 @@ function App() {
 
   const handleDeleteCourse = async (courseId: number) => {
     try {
-      await axios.delete(`${API_BASE}/${courseId}`);
-      // Hacky way to force Dashboard refresh without global state management:
-      // Toggle appState back and forth to trigger remount, or we can just 
-      // let Dashboard handle its own fetch when it re-renders. 
-      // A full remount is easiest for hackathon:
+      await courseApi.deleteCourse(courseId);
       setAppState('LANDING_PAGE');
-      setTimeout(() => setAppState('DASHBOARD'), 10);
+      setTimeout(() => setAppState('DASHBOARD'), 20);
     } catch (err: any) {
-      console.error('Failed to delete course', err);
-      alert(err.response?.data?.message || 'Không thể xóa khóa học. Vui lòng thử lại.');
+      console.error('Lỗi khi xóa khóa học:', err);
+      alert(err.response?.data?.message || 'Không thể xóa khóa học. Vui lòng thử lại sau.');
     }
   };
 
@@ -148,19 +171,18 @@ function App() {
       const allBlocks = course.lessons.reduce((acc: Block[], lesson) => [...acc, ...(lesson.blocks || [])], []);
       setBlocks(allBlocks);
     } else {
-      setBlocks([]); // Handle empty lessons properly if needed
+      setBlocks([]);
     }
     setCurrentCourse(course);
-    setCurrentStepIndex(course.currentStepIndex || 0);
-    setMaxReachedIndex(course.currentStepIndex || 0);
-    
-    // Assume all previous steps are completed if we resume at a specific index
+    const startStep = course.currentStepIndex || 0;
+    setCurrentStepIndex(startStep);
+    setMaxReachedIndex(startStep);
+
     const previouslyCompleted = new Set<number>();
-    for (let i = 0; i <= (course.currentStepIndex || 0); i++) {
+    for (let i = 0; i <= startStep; i++) {
       previouslyCompleted.add(i);
     }
     setCompletedSteps(previouslyCompleted);
-    
     setAppState('COURSE_PLAYER');
   };
 
@@ -170,10 +192,10 @@ function App() {
       const allBlocks = course.lessons.reduce((acc: Block[], lesson) => [...acc, ...(lesson.blocks || [])], []);
       setBlocks(allBlocks);
     } else {
-      setBlocks([]); 
+      setBlocks([]);
     }
     setCurrentCourse(course);
-    setCurrentStepIndex(0); // Start from beginning for preview
+    setCurrentStepIndex(0);
     setMaxReachedIndex(0);
     setCompletedSteps(new Set());
     setAppState('COURSE_PLAYER');
@@ -190,18 +212,15 @@ function App() {
   }, [currentStepIndex, currentBlock, completedSteps]);
 
   const saveProgress = async (courseId: number, index: number) => {
-    if (isPreviewMode) return; // Do not save progress in preview mode
-    
+    if (isPreviewMode) return;
     const newMax = Math.max(maxReachedIndex, index);
     if (newMax > maxReachedIndex) {
       setMaxReachedIndex(newMax);
     }
-
     try {
-      // Save the highest step reached, not the current one we nav to
-      await axios.put(`${API_BASE}/${courseId}/progress?stepIndex=${newMax}`);
+      await courseApi.saveProgress(courseId, newMax);
     } catch (err) {
-      console.error('Failed to save progress', err);
+      console.error('[App] Lỗi lưu tiến độ:', err);
     }
   };
 
@@ -227,7 +246,7 @@ function App() {
 
   const handleInteractiveSuccess = () => {
     setCanProceed(true);
-    setCompletedSteps(prev => {
+    setCompletedSteps((prev) => {
       const newSet = new Set(prev);
       newSet.add(currentStepIndex);
       return newSet;
@@ -246,7 +265,7 @@ function App() {
   const handleGenerateCourse = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!file || (!title && !targetCourseId) || !user) return;
-    if (isLoading) return; // Anti-spam protection
+    if (isLoading) return;
 
     setIsLoading(true);
     const formData = new FormData();
@@ -258,22 +277,16 @@ function App() {
     }
 
     try {
-      const response = await axios.post(`${API_BASE}/generate`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
-      const data = response.data;
-      
-      // Backend bất đồng bộ trả về 202 Accepted: { courseId: 11, status: "PENDING", ... }
+      const data = await courseApi.generateCourse(formData);
       if (data && data.courseId) {
         setGeneratingCourseId(data.courseId);
         setGeneratingTitle(title || file.name);
         setAppState('COURSE_GENERATING');
       } else if (data && data.lessons && data.lessons.length > 0) {
-        // Fallback tương thích ngược nếu backend trả về cả cục course
-        handleResumeCourse(data);
+        handleResumeCourse(data as any);
       }
     } catch (err: any) {
-      console.error('Failed to generate course', err);
+      console.error('[App] Lỗi tạo khóa học:', err);
       alert(err.response?.data?.message || 'Quá trình tạo khóa học thất bại. Vui lòng kiểm tra lại file hoặc thử lại sau.');
     } finally {
       setIsLoading(false);
@@ -291,10 +304,10 @@ function App() {
 
     if (appState === 'DASHBOARD' && user) {
       return (
-        <Dashboard 
-          user={user} 
-          onLogout={handleLogout} 
-          onCreateNew={handleCreateNew} 
+        <Dashboard
+          user={user}
+          onLogout={handleLogout}
+          onCreateNew={handleCreateNew}
           onResumeCourse={handleResumeCourse}
           onPreviewCourse={handlePreviewCourse}
           onAppendLesson={handleAppendLesson}
@@ -325,115 +338,127 @@ function App() {
     }
 
     if (appState === 'COURSE_CREATE') {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 font-sans relative">
-        <button
-          onClick={() => setAppState('DASHBOARD')}
-          className="absolute top-8 left-8 flex items-center text-slate-600 hover:text-indigo-600 transition-colors"
-        >
-          <ArrowLeft className="w-5 h-5 mr-2" />
-          Back to Dashboard
-        </button>
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-[#090D16] font-sans relative px-4 overflow-hidden">
+          {/* Ambient Glow */}
+          <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[500px] bg-indigo-600/15 rounded-full blur-[140px] pointer-events-none" />
 
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-white p-10 rounded-3xl shadow-xl border border-slate-100 max-w-lg w-full"
-        >
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-indigo-100 text-indigo-600 rounded-full mb-4">
-              <BookOpen className="w-8 h-8" />
-            </div>
-            <h1 className="text-3xl font-black text-slate-800">
-              {targetCourseId ? "Add Chapter to Course" : "AI Course Engine"}
-            </h1>
-            <p className="text-slate-500 mt-2">
-              {targetCourseId 
-                ? "Upload a PDF or DOCX file to append as a new chapter." 
-                : "Upload a PDF or DOCX textbook and let AI generate an interactive course."}
-            </p>
-          </div>
+          <button
+            onClick={() => setAppState('DASHBOARD')}
+            className="absolute top-8 left-8 flex items-center gap-2 text-slate-400 hover:text-white transition-colors text-sm font-medium py-2 px-3 rounded-lg hover:bg-slate-900/60"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>Quay lại Dashboard</span>
+          </button>
 
-          <form onSubmit={handleGenerateCourse} className="space-y-6">
-            {!targetCourseId && (
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1">Course Title</label>
-                <input 
-                  type="text" 
-                  value={title}
-                  onChange={e => setTitle(e.target.value)}
-                  placeholder="e.g. Introduction to Machine Learning"
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-slate-50"
-                  required
-                />
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-slate-900/90 border border-slate-800/80 backdrop-blur-xl p-8 sm:p-10 rounded-3xl shadow-2xl max-w-lg w-full relative z-10"
+          >
+            <div className="text-center mb-8">
+              <div className="inline-flex items-center justify-center w-14 h-14 bg-indigo-500/15 text-indigo-400 border border-indigo-500/30 rounded-2xl mb-4">
+                <BookOpen className="w-7 h-7" />
               </div>
-            )}
-            
-            <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-1">Textbook (PDF / DOCX)</label>
-              <div className="relative border-2 border-dashed border-slate-300 rounded-xl p-6 text-center hover:border-indigo-500 transition-colors cursor-pointer">
-                <input 
-                  type="file" 
-                  accept=".pdf,.docx"
-                  required
-                  onChange={e => {
-                    const selectedFile = e.target.files?.[0];
-                    if (selectedFile) {
-                      if (selectedFile.size > 10 * 1024 * 1024) { // 10MB limit
-                        alert("File quá lớn! Vui lòng tải lên file nhỏ hơn 10MB để tiết kiệm Token bạn nhé.");
-                        e.target.value = ''; // Reset input
-                        setFile(null);
-                      } else {
-                        setFile(selectedFile);
-                      }
-                    } else {
-                      setFile(null);
-                    }
-                  }}
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                />
-                <UploadCloud className="w-8 h-8 text-slate-400 mx-auto mb-2" />
-                <span className="text-slate-600 font-medium">{file ? file.name : 'Click or drag PDF/DOCX to upload'}</span>
-              </div>
+              <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+                {targetCourseId ? 'Thêm Chương Bài Học' : 'Tạo Khóa Học Bằng AI'}
+              </h1>
+              <p className="text-slate-400 text-xs sm:text-sm mt-2 leading-relaxed">
+                {targetCourseId
+                  ? 'Tải lên tài liệu PDF hoặc DOCX để thêm một chương mới vào khóa học hiện tại.'
+                  : 'Tải lên giáo trình hoặc tài liệu, AI sẽ tự động phân tích và tạo khóa học tương tác đa phương thức.'}
+              </p>
             </div>
 
-            <button 
-              type="submit" 
-              disabled={!file || (!title && !targetCourseId) || isLoading}
-              className="w-full bg-indigo-600 text-white font-bold py-4 px-6 rounded-xl hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-all disabled:opacity-50 flex items-center justify-center"
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                  {targetCourseId ? "Adding Chapter..." : "Generating Course..."}
-                </>
-              ) : (
-                targetCourseId ? "Add Chapter to Course" : "Generate Course"
+            <form onSubmit={handleGenerateCourse} className="space-y-5">
+              {!targetCourseId && (
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">
+                    Tên khóa học
+                  </label>
+                  <input
+                    type="text"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder="VD: Cấu trúc Dữ liệu & Giải thuật nâng cao"
+                    className="w-full bg-slate-950/80 border border-slate-800 rounded-xl py-3 px-4 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all text-sm"
+                    required
+                  />
+                </div>
               )}
-            </button>
-          </form>
-        </motion.div>
-      </div>
+
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">
+                  Tài liệu giáo trình (PDF / DOCX)
+                </label>
+                <div className="relative border-2 border-dashed border-slate-700/80 hover:border-indigo-500 rounded-2xl p-7 text-center transition-all bg-slate-950/40 hover:bg-slate-950/70 group cursor-pointer">
+                  <input
+                    type="file"
+                    accept=".pdf,.docx"
+                    required
+                    onChange={(e) => {
+                      const selectedFile = e.target.files?.[0];
+                      if (selectedFile) {
+                        if (selectedFile.size > 15 * 1024 * 1024) {
+                          alert('Dung lượng file tối đa là 15MB. Vui lòng chọn file nhẹ hơn.');
+                          e.target.value = '';
+                          setFile(null);
+                        } else {
+                          setFile(selectedFile);
+                        }
+                      } else {
+                        setFile(null);
+                      }
+                    }}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  />
+                  <UploadCloud className="w-9 h-9 text-slate-500 group-hover:text-indigo-400 mx-auto mb-2 transition-colors" />
+                  <p className="text-white text-sm font-semibold mb-1">
+                    {file ? file.name : 'Nhấp hoặc kéo thả file vào đây'}
+                  </p>
+                  <span className="text-[11px] text-slate-500">Hỗ trợ định dạng .pdf, .docx (tối đa 15MB)</span>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={!file || (!title && !targetCourseId) || isLoading}
+                className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3.5 px-6 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all shadow-lg shadow-indigo-600/30 active:scale-[0.99] disabled:opacity-50 flex items-center justify-center gap-2 text-sm mt-3"
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span>{targetCourseId ? 'Đang thêm chương...' : 'AI đang xử lý giáo trình...'}</span>
+                  </>
+                ) : targetCourseId ? (
+                  'Thêm chương vào khóa học'
+                ) : (
+                  'Tạo khóa học ngay'
+                )}
+              </button>
+            </form>
+          </motion.div>
+        </div>
       );
     }
 
     if (appState === 'COURSE_PLAYER') {
       if (!blocks || blocks.length === 0) {
         return (
-          <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 font-sans p-6 text-center">
-            <div className="w-16 h-16 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center mb-4 shadow-sm">
+          <div className="min-h-screen flex flex-col items-center justify-center bg-[#090D16] font-sans p-6 text-center text-slate-300">
+            <div className="w-16 h-16 bg-amber-500/15 border border-amber-500/30 text-amber-400 rounded-2xl flex items-center justify-center mb-4">
               <BookOpen className="w-8 h-8" />
             </div>
-            <h2 className="text-2xl font-black text-slate-800 mb-2">Chưa có nội dung bài học</h2>
-            <p className="text-slate-500 max-w-md mb-6 text-sm">
-              Tài liệu bạn tải lên có thể quá ngắn hoặc chưa trích xuất được khối bài học tương tác nào. Bạn hãy thử tải lên tài liệu chi tiết hơn nhé!
+            <h2 className="text-2xl font-black text-white mb-2">Chưa có nội dung bài học</h2>
+            <p className="text-slate-400 max-w-md mb-6 text-xs sm:text-sm leading-relaxed">
+              Tài liệu bạn tải lên có thể quá ngắn hoặc chưa trích xuất được khối bài học tương tác nào. Hãy thử tải lên tài liệu chi tiết hơn nhé!
             </p>
             <button
               onClick={() => setAppState('DASHBOARD')}
-              className="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition-all shadow-md hover:-translate-y-0.5"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl transition-all shadow-lg shadow-indigo-600/30 text-sm"
             >
               <ArrowLeft className="w-4 h-4" />
-              Quay lại Dashboard
+              <span>Quay lại Dashboard</span>
             </button>
           </div>
         );
@@ -442,191 +467,273 @@ function App() {
       const theoryBlock = getLatestTheoryBlock();
       const activeBlock = blocks[currentStepIndex] || blocks[0];
       const isInteractiveNow = Boolean(activeBlock?.type && activeBlock.type !== 'theory_markdown');
+      const progressPercent = Math.round(((currentStepIndex + 1) / blocks.length) * 100);
 
-    return (
-      <div className="h-screen flex flex-col font-sans bg-slate-50 overflow-hidden">
-        <header className="bg-white shadow-sm border-b border-slate-200 px-8 py-4 flex justify-between items-center z-10">
-          <div className="flex items-center space-x-3 text-indigo-700">
-            <button
-              onClick={() => setAppState('DASHBOARD')}
-              className="mr-4 text-slate-500 hover:text-indigo-600 transition-colors"
-            >
-              <ArrowLeft className="w-6 h-6" />
-            </button>
-            <BookOpen className="w-8 h-8" />
-            <h1 className="text-2xl font-black tracking-tight">
-              {isPreviewMode && <span className="text-sm font-bold text-orange-500 bg-orange-100 px-3 py-1 rounded-full mr-3 align-middle">PREVIEW</span>}
-              {currentCourse?.title || 'Course Player'}
-            </h1>
-          </div>
-          
-          <div className="flex items-center space-x-4">
-            <button
-              onClick={() => {
-                setTutorContext("");
-                setIsTutorOpen(true);
-              }}
-              className="flex items-center text-sm font-bold text-purple-600 bg-purple-50 hover:bg-purple-100 px-4 py-1.5 rounded-full transition-colors border border-purple-100"
-            >
-              <Sparkles className="w-4 h-4 mr-1.5" />
-              Ask AI
-            </button>
-            {!isPreviewMode && (
+      return (
+        <div className="h-screen flex flex-col font-sans bg-[#090D16] text-slate-200 overflow-hidden">
+          {/* HEADER */}
+          <header className="bg-slate-900/90 border-b border-slate-800/80 px-6 py-3.5 flex justify-between items-center z-10 backdrop-blur-md">
+            <div className="flex items-center gap-3">
               <button
-                onClick={() => setIsNotebookOpen(true)}
-                className="flex items-center text-sm font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-4 py-1.5 rounded-full transition-colors border border-indigo-100"
+                onClick={() => setAppState('DASHBOARD')}
+                className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+                title="Về Dashboard"
               >
-                <Bookmark className="w-4 h-4 mr-1.5" />
-                Notebook ({highlights.length})
+                <ArrowLeft className="w-5 h-5" />
               </button>
-            )}
-            <select
-              value={currentStepIndex}
-              onChange={(e) => {
-                const newIndex = parseInt(e.target.value);
-                setCurrentStepIndex(newIndex);
-              }}
-              className="text-sm font-medium text-slate-700 bg-slate-100 px-4 py-1.5 rounded-full border-none focus:ring-2 focus:ring-indigo-500 cursor-pointer hover:bg-slate-200 transition-colors"
-            >
-              {blocks.map((b, idx) => {
-                const label = b.type === 'theory_markdown' ? 'Lý thuyết' : 
-                              b.type === 'interactive_fill_blank' ? 'Điền từ' :
-                              b.type === 'interactive_scenario' ? 'Tình huống' :
-                              b.type === 'interactive_code_editor' ? 'Lập trình' :
-                              b.type === 'interactive_drag_drop' ? 'Kéo thả' : 'Bài tập';
-                const isLocked = idx > maxReachedIndex && !isPreviewMode;
-                return (
-                  <option key={idx} value={idx} disabled={isLocked}>
-                    Bước {idx + 1}: {label} {isLocked ? '(🔒)' : ''}
-                  </option>
-                );
-              })}
-            </select>
-          </div>
-        </header>
-
-        <main className="flex-1 flex overflow-hidden">
-          <div className={`transition-all duration-500 ease-in-out ${isInteractiveNow ? 'w-1/2' : 'w-full max-w-4xl mx-auto'} h-full overflow-y-auto p-8`}>
-            <AnimatePresence mode="wait">
-              {theoryBlock && (
-                <TheoryPane 
-                  key={`theory-${theoryBlock.content ? theoryBlock.content.substring(0, 10) : 'default'}`} 
-                  block={theoryBlock} 
-                  onSaveHighlight={handleSaveHighlight}
-                  onAskAI={handleAskAI}
-                />
-              )}
-            </AnimatePresence>
-          </div>
-
-          {isInteractiveNow && (
-            <div className="w-1/2 h-full p-8 border-l border-slate-200 bg-white overflow-y-auto">
-              {blocks.map((b, index) => {
-                if (b.type === 'theory_markdown') return null;
-                const isVisible = index === currentStepIndex;
-                return (
-                  <div key={index} className={isVisible ? 'block h-full' : 'hidden'}>
-                    {b.type === 'interactive_fill_blank' && (
-                      <FillBlankPane 
-                        block={b as FillBlankBlock} 
-                        onSuccess={() => {
-                          if (index === currentStepIndex) handleInteractiveSuccess();
-                        }} 
-                        onAskHint={(q) => handleAskAI("I'm stuck on this exercise. Can you give me a subtle hint without revealing the direct answer? Question: " + q)}
-                      />
-                    )}
-                    {b.type === 'interactive_scenario' && (
-                      <ScenarioPane 
-                        block={b as ScenarioBlock} 
-                        onSuccess={() => {
-                          if (index === currentStepIndex) handleInteractiveSuccess();
-                        }} 
-                        onAskHint={(q) => handleAskAI("I'm stuck on this scenario. Can you give me a subtle hint without revealing the direct answer? Context: " + q)}
-                      />
-                    )}
-                    {b.type === 'interactive_code_editor' && (
-                      <CodePane 
-                        block={b as CodeBlock} 
-                        onSuccess={() => {
-                          if (index === currentStepIndex) handleInteractiveSuccess();
-                        }} 
-                        onAskHint={(q) => handleAskAI("I'm stuck on this coding exercise. Can you give me a subtle hint without writing the code for me? Instruction: " + q)}
-                      />
-                    )}
-                    {b.type === 'interactive_drag_drop' && (
-                      <DragDropPane 
-                        block={b as DragDropBlock} 
-                        onSuccess={() => {
-                          if (index === currentStepIndex) handleInteractiveSuccess();
-                        }} 
-                        onAskHint={(q) => handleAskAI("I'm stuck on this drag and drop exercise. Can you give me a subtle hint? Context: " + q)}
-                      />
-                    )}
-                  </div>
-                );
-              })}
+              <div className="h-4 w-px bg-slate-800 hidden sm:block"></div>
+              <div className="flex items-center gap-2">
+                <BookOpen className="w-5 h-5 text-indigo-400" />
+                <h1 className="text-base sm:text-lg font-bold text-white tracking-tight line-clamp-1 max-w-[200px] sm:max-w-md">
+                  {isPreviewMode && (
+                    <span className="text-[11px] font-bold text-amber-400 bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 rounded-full mr-2">
+                      PREVIEW
+                    </span>
+                  )}
+                  {currentCourse?.title || 'Course Player'}
+                </h1>
+              </div>
             </div>
-          )}
-        </main>
 
-        <footer className="bg-white border-t border-slate-200 p-4 flex justify-center items-center z-10 space-x-4">
-          <button
-            onClick={handlePrevious}
-            disabled={currentStepIndex === 0}
-            className={`px-6 py-3 rounded-full font-bold shadow-sm transition-all ${
-              currentStepIndex === 0
-                ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                : 'bg-slate-200 hover:bg-slate-300 text-slate-700 transform hover:-translate-y-0.5'
-            }`}
-          >
-            Previous
-          </button>
+            {/* Middle Step Progress Pill */}
+            <div className="hidden md:flex items-center gap-3 bg-slate-950/70 border border-slate-800 px-4 py-1.5 rounded-full text-xs">
+              <span className="text-slate-400">Tiến độ bài học:</span>
+              <span className="font-bold text-emerald-400">
+                Bước {currentStepIndex + 1} / {blocks.length} ({progressPercent}%)
+              </span>
+              <div className="w-20 bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                <div
+                  className="bg-emerald-400 h-1.5 rounded-full transition-all duration-300"
+                  style={{ width: `${progressPercent}%` }}
+                />
+              </div>
+            </div>
 
-          {!isInteractiveNow && (
+            {/* Actions */}
+            <div className="flex items-center gap-2.5">
+              <button
+                onClick={() => {
+                  setTutorContext('');
+                  setIsTutorOpen(true);
+                }}
+                className="flex items-center gap-1.5 text-xs font-bold text-indigo-300 bg-indigo-500/15 hover:bg-indigo-500/25 border border-indigo-500/30 px-3.5 py-1.5 rounded-full transition-colors"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Hỏi AI Tutor</span>
+              </button>
+
+              {!isPreviewMode && (
+                <button
+                  onClick={() => setIsNotebookOpen(true)}
+                  className="flex items-center gap-1.5 text-xs font-bold text-emerald-300 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 px-3.5 py-1.5 rounded-full transition-colors"
+                >
+                  <Bookmark className="w-3.5 h-3.5" />
+                  <span>Sổ tay ({highlights.length})</span>
+                </button>
+              )}
+
+              {/* Step Jump Dropdown */}
+              <select
+                value={currentStepIndex}
+                onChange={(e) => {
+                  const newIndex = parseInt(e.target.value);
+                  setCurrentStepIndex(newIndex);
+                }}
+                className="text-xs font-medium text-slate-300 bg-slate-800/90 border border-slate-700/80 px-3 py-1.5 rounded-full outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer"
+              >
+                {blocks.map((b, idx) => {
+                  const label =
+                    b.type === 'theory_markdown'
+                      ? 'Lý thuyết'
+                      : b.type === 'interactive_fill_blank'
+                      ? 'Điền từ'
+                      : b.type === 'interactive_scenario'
+                      ? 'Tình huống'
+                      : b.type === 'interactive_code_editor'
+                      ? 'Code'
+                      : b.type === 'interactive_drag_drop'
+                      ? 'Kéo thả'
+                      : 'Bài tập';
+                  const isLocked = idx > maxReachedIndex && !isPreviewMode;
+                  return (
+                    <option key={idx} value={idx} disabled={isLocked} className="bg-slate-900 text-white">
+                      Bước {idx + 1}: {label} {isLocked ? '(🔒)' : ''}
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
+          </header>
+
+          {/* MAIN PLAYER VIEW */}
+          <main className="flex-1 flex overflow-hidden">
+            {/* Theory column */}
+            <div
+              className={`transition-all duration-300 ease-in-out ${
+                isInteractiveNow ? 'w-full md:w-1/2' : 'w-full max-w-4xl mx-auto'
+              } h-full overflow-y-auto p-6 md:p-10`}
+            >
+              <AnimatePresence mode="wait">
+                {theoryBlock && (
+                  <TheoryPane
+                    key={`theory-${theoryBlock.content ? theoryBlock.content.substring(0, 15) : 'default'}`}
+                    block={theoryBlock}
+                    onSaveHighlight={handleSaveHighlight}
+                    onAskAI={handleAskAI}
+                  />
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* Interactive Challenge column */}
+            {isInteractiveNow && (
+              <div className="w-full md:w-1/2 h-full p-6 md:p-8 border-l border-slate-800/80 bg-slate-900/40 overflow-y-auto">
+                {blocks.map((b, index) => {
+                  if (b.type === 'theory_markdown') return null;
+                  const isVisible = index === currentStepIndex;
+                  return (
+                    <div key={index} className={isVisible ? 'block h-full' : 'hidden'}>
+                      {b.type === 'interactive_fill_blank' && (
+                        <FillBlankPane
+                          block={b as FillBlankBlock}
+                          onSuccess={() => {
+                            if (index === currentStepIndex) handleInteractiveSuccess();
+                          }}
+                          onAskHint={(q) =>
+                            handleAskAI(
+                              'Tôi đang gặp khó khăn ở bài tập điền từ này. Hãy cho tôi gợi ý tinh tế mà không tiết lộ trực tiếp đáp án: ' +
+                                q
+                            )
+                          }
+                        />
+                      )}
+                      {b.type === 'interactive_scenario' && (
+                        <ScenarioPane
+                          block={b as ScenarioBlock}
+                          onSuccess={() => {
+                            if (index === currentStepIndex) handleInteractiveSuccess();
+                          }}
+                          onAskHint={(q) =>
+                            handleAskAI(
+                              'Tôi đang gặp khó khăn ở tình huống này. Hãy cho tôi gợi ý phân tích mà không nói luôn đáp án: ' +
+                                q
+                            )
+                          }
+                        />
+                      )}
+                      {b.type === 'interactive_code_editor' && (
+                        <CodePane
+                          block={b as CodeBlock}
+                          onSuccess={() => {
+                            if (index === currentStepIndex) handleInteractiveSuccess();
+                          }}
+                          onAskHint={(q) =>
+                            handleAskAI(
+                              'Tôi đang viết code cho bài này và bị kẹt. Hãy cho tôi gợi ý thuật toán hoặc cú pháp mẫu: ' +
+                                q
+                            )
+                          }
+                        />
+                      )}
+                      {b.type === 'interactive_drag_drop' && (
+                        <DragDropPane
+                          block={b as DragDropBlock}
+                          onSuccess={() => {
+                            if (index === currentStepIndex) handleInteractiveSuccess();
+                          }}
+                          onAskHint={(q) =>
+                            handleAskAI(
+                              'Gợi ý giúp tôi cách phân loại bài tập kéo thả này một cách khoa học: ' + q
+                            )
+                          }
+                        />
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </main>
+
+          {/* FOOTER CONTROLS */}
+          <footer className="bg-slate-900/90 border-t border-slate-800/80 px-6 py-3.5 flex justify-between items-center z-10 backdrop-blur-md">
             <button
-              onClick={handleNext}
-              disabled={currentStepIndex === blocks.length - 1}
-              className={`px-8 py-3 rounded-full font-bold shadow-sm transition-all ${
-                currentStepIndex === blocks.length - 1
-                  ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                  : 'bg-indigo-600 hover:bg-indigo-700 text-white transform hover:-translate-y-0.5 hover:shadow-md'
+              onClick={handlePrevious}
+              disabled={currentStepIndex === 0}
+              className={`flex items-center gap-1.5 px-5 py-2.5 rounded-xl font-bold text-xs transition-all ${
+                currentStepIndex === 0
+                  ? 'bg-slate-800/40 text-slate-600 cursor-not-allowed border border-slate-800/40'
+                  : 'bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60'
               }`}
             >
-              {currentStepIndex === blocks.length - 1 ? 'Course Completed' : 'Next Lesson'}
+              <ChevronLeft className="w-4 h-4" />
+              <span>Bước trước</span>
             </button>
-          )}
-          {isInteractiveNow && (
-            <div className="text-slate-500 font-medium animate-pulse">
-              {canProceed ? 'Great! You can proceed to the next lesson.' : 'Complete the interactive exercise to continue.'}
-            </div>
-          )}
-          {isInteractiveNow && canProceed && (
-            <button
-              onClick={handleNext}
-              className="ml-6 px-8 py-3 rounded-full font-bold shadow-sm transition-all bg-green-600 hover:bg-green-700 text-white transform hover:-translate-y-0.5 hover:shadow-md"
-            >
-              Next Lesson
-            </button>
-          )}
-        </footer>
 
-        {user && currentCourse && (
-          <NotebookSidebar
-            isOpen={isNotebookOpen}
-            onClose={() => setIsNotebookOpen(false)}
-            highlights={highlights}
-            onDeleteHighlight={handleDeleteHighlight}
-            onUpdateNote={handleUpdateNote}
+            {/* Center Status */}
+            {isInteractiveNow && (
+              <div className="text-xs font-semibold flex items-center gap-2">
+                {canProceed ? (
+                  <span className="text-emerald-400 flex items-center gap-1">
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>Xuất sắc! Bạn có thể chuyển sang bước tiếp theo.</span>
+                  </span>
+                ) : (
+                  <span className="text-amber-400 animate-pulse">
+                    ⚠️ Hoàn thành thử thách tương tác bên phải để mở khóa bước tiếp theo.
+                  </span>
+                )}
+              </div>
+            )}
+
+            {/* Next Button */}
+            {!isInteractiveNow ? (
+              <button
+                onClick={handleNext}
+                disabled={currentStepIndex === blocks.length - 1}
+                className={`flex items-center gap-1.5 px-6 py-2.5 rounded-xl font-bold text-xs transition-all shadow-md ${
+                  currentStepIndex === blocks.length - 1
+                    ? 'bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 cursor-default'
+                    : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-600/30'
+                }`}
+              >
+                <span>{currentStepIndex === blocks.length - 1 ? 'Đã hoàn thành khóa học' : 'Bước tiếp theo'}</span>
+                {currentStepIndex < blocks.length - 1 && <ChevronRight className="w-4 h-4" />}
+              </button>
+            ) : (
+              <button
+                onClick={handleNext}
+                disabled={!canProceed || currentStepIndex === blocks.length - 1}
+                className={`flex items-center gap-1.5 px-6 py-2.5 rounded-xl font-bold text-xs transition-all shadow-md ${
+                  canProceed
+                    ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/30'
+                    : 'bg-slate-800/40 text-slate-600 cursor-not-allowed border border-slate-800/40'
+                }`}
+              >
+                <span>{currentStepIndex === blocks.length - 1 ? 'Khóa học hoàn tất' : 'Tiếp tục bài học'}</span>
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            )}
+          </footer>
+
+          {/* SIDEBARS */}
+          {user && currentCourse && (
+            <NotebookSidebar
+              isOpen={isNotebookOpen}
+              onClose={() => setIsNotebookOpen(false)}
+              highlights={highlights}
+              onDeleteHighlight={handleDeleteHighlight}
+              onUpdateNote={handleUpdateNote}
+            />
+          )}
+
+          <TutorSidebar
+            isOpen={isTutorOpen}
+            onClose={() => setIsTutorOpen(false)}
+            contextText={tutorContext}
+            onSaveToNotebook={(text) => handleSaveHighlight('AI Giải thích: ' + text.substring(0, 45) + '...\n' + text)}
           />
-        )}
-
-        <TutorSidebar
-          isOpen={isTutorOpen}
-          onClose={() => setIsTutorOpen(false)}
-          contextText={tutorContext}
-          onSaveToNotebook={(text) => handleSaveHighlight("AI Giải thích: " + text.substring(0, 50) + "...\n" + text)}
-        />
-      </div>
+        </div>
       );
     }
 

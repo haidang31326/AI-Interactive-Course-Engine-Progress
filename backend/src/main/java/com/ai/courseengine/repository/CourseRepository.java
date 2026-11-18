@@ -13,4 +13,6 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
     List<Course> findAllByUserId(Long userId);
     @EntityGraph(attributePaths = {"lessons"})
     List<Course> findByIsPublicTrue();
+
+
 }

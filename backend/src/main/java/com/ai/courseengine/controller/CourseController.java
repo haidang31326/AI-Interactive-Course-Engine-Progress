@@ -2,6 +2,7 @@ package com.ai.courseengine.controller;
 
 import com.ai.courseengine.dto.kafka.CourseGenerationEvent;
 import com.ai.courseengine.model.Course;
+import com.ai.courseengine.model.User;
 import com.ai.courseengine.service.CourseService;
 import com.ai.courseengine.service.DocumentParserService;
 import com.ai.courseengine.service.bucket4j.RateLimitingService;
@@ -14,6 +15,9 @@ import org.apache.kafka.common.metrics.stats.Rate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.security.access.prepost.PostAuthorize;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -54,21 +58,23 @@ public class CourseController {
 
     }
 
-    @GetMapping
+    @GetMapping("/admin/all")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<Course>> getAllCourses() {
         return ResponseEntity.ok(courseService.getAllCourses());
     }
 
     @GetMapping("/{id}")
+    @PostAuthorize("returnObject.body.userId == authentication.principal.id or returnObject.body.isPublic == true")
     public ResponseEntity<Course> getCourse(@PathVariable Long id) {
         return courseService.getCourse(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @GetMapping("/user/{userId}")
-    public ResponseEntity<List<Course>> getAllCoursesByUser(@PathVariable Long userId) {
-        return ResponseEntity.ok(courseService.getCoursesByUserId(userId));
+    @GetMapping("/user")
+    public ResponseEntity<List<Course>> getAllCoursesByUser(@AuthenticationPrincipal User currentUser) {
+        return ResponseEntity.ok(courseService.getCoursesByUserId(currentUser.getId()));
     }
 
     @GetMapping("/community")

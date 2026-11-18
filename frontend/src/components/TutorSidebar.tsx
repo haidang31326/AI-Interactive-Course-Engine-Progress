@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Sparkles, Send, Loader2, Bookmark } from 'lucide-react';
+import { X, Sparkles, Send, Loader2, Bookmark, HelpCircle } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+import { chatApi } from '../services/api';
 
 interface Props {
   isOpen: boolean;
@@ -11,36 +12,36 @@ interface Props {
 }
 
 export const TutorSidebar: React.FC<Props> = ({ isOpen, onClose, contextText, onSaveToNotebook }) => {
-  const [question, setQuestion] = useState("");
-  const [answer, setAnswer] = useState("");
+  const [question, setQuestion] = useState('');
+  const [answer, setAnswer] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    // When a new context is passed in, clear previous chat
     if (contextText) {
-      setQuestion("");
-      setAnswer("");
+      setQuestion('');
+      setAnswer('');
+      setError('');
     }
   }, [contextText]);
 
-  const handleSend = () => {
-    if (!question.trim() || isLoading) return;
+  const handleSend = async (customPrompt?: string) => {
+    const promptToSend = customPrompt || question;
+    if (!promptToSend.trim() || isLoading) return;
+
     setIsLoading(true);
-    setAnswer(""); // clear previous answer when asking new question
-    fetch('http://localhost:8080/api/chat/explain', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ highlightedText: contextText, question })
-    })
-      .then(res => res.json())
-      .then(data => {
-        setAnswer(data.response || data.error);
-        setIsLoading(false);
-      })
-      .catch(() => {
-        setAnswer("Network error contacting AI tutor.");
-        setIsLoading(false);
-      });
+    setAnswer('');
+    setError('');
+
+    try {
+      const response = await chatApi.explainText(contextText, promptToSend);
+      setAnswer(response);
+    } catch (err: any) {
+      console.error('[TutorSidebar] Lỗi gọi AI Tutor:', err);
+      setError(err.message || 'Không thể kết nối với Trợ lý AI. Vui lòng thử lại sau.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -50,90 +51,135 @@ export const TutorSidebar: React.FC<Props> = ({ isOpen, onClose, contextText, on
           {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
-            animate={{ opacity: 0.3 }}
+            animate={{ opacity: 0.5 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black z-40"
+            className="fixed inset-0 bg-black/80 z-40 backdrop-blur-sm"
           />
-          
+
           {/* Sidebar */}
           <motion.div
             initial={{ x: '100%' }}
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
-            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed top-0 right-0 h-full w-full max-w-md bg-white shadow-2xl z-50 flex flex-col border-l border-slate-200"
+            transition={{ type: 'spring', damping: 26, stiffness: 220 }}
+            className="fixed top-0 right-0 h-full w-full max-w-md bg-slate-900 border-l border-slate-800 shadow-2xl z-50 flex flex-col font-sans"
           >
-            <div className="p-6 border-b border-slate-200 flex justify-between items-center bg-purple-600">
-              <h2 className="text-xl font-bold text-white flex items-center">
-                <Sparkles className="w-5 h-5 mr-2" />
-                AI Tutor
-              </h2>
-              <button onClick={onClose} className="p-2 text-purple-200 hover:text-white rounded-full transition-colors">
+            {/* Header */}
+            <div className="p-5 border-b border-slate-800 flex justify-between items-center bg-slate-950/70">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 bg-indigo-500/15 text-indigo-400 rounded-xl border border-indigo-500/30">
+                  <Sparkles className="w-4 h-4" />
+                </div>
+                <div>
+                  <h2 className="text-base font-bold text-white flex items-center gap-2">
+                    AI Tutor Cá Nhân
+                  </h2>
+                  <p className="text-[11px] text-slate-400">Giải đáp thắc mắc và phân tích ngữ cảnh bài học</p>
+                </div>
+              </div>
+              <button
+                onClick={onClose}
+                className="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>
-            
-            <div className="flex-1 overflow-y-auto bg-slate-50 flex flex-col p-6 space-y-6">
+
+            {/* Chat Body */}
+            <div className="flex-1 overflow-y-auto bg-slate-950/50 p-5 space-y-4">
               {contextText && (
-                <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
-                  <p className="text-xs font-bold text-slate-400 mb-2 uppercase tracking-wide">Context from lesson</p>
-                  <p className="text-sm text-slate-600 italic border-l-4 border-purple-400 pl-3 py-1">
+                <div className="bg-slate-900/90 rounded-2xl p-4 border border-indigo-500/20 shadow-md">
+                  <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-wider block mb-1.5 flex items-center gap-1.5">
+                    <Sparkles className="w-3 h-3" />
+                    Đoạn văn bản đang chọn
+                  </span>
+                  <p className="text-xs text-slate-300 italic border-l-2 border-indigo-500 pl-3 py-0.5 leading-relaxed">
                     "{contextText}"
                   </p>
                 </div>
               )}
-              
-              {isLoading && !answer && (
-                <div className="bg-purple-50 rounded-xl p-5 shadow-sm border border-purple-100 flex space-x-2 items-center text-purple-500 w-32">
-                  <motion.div
-                    className="w-2 h-2 bg-purple-500 rounded-full"
-                    animate={{ y: [0, -5, 0] }}
-                    transition={{ duration: 0.6, repeat: Infinity, delay: 0 }}
-                  />
-                  <motion.div
-                    className="w-2 h-2 bg-purple-500 rounded-full"
-                    animate={{ y: [0, -5, 0] }}
-                    transition={{ duration: 0.6, repeat: Infinity, delay: 0.2 }}
-                  />
-                  <motion.div
-                    className="w-2 h-2 bg-purple-500 rounded-full"
-                    animate={{ y: [0, -5, 0] }}
-                    transition={{ duration: 0.6, repeat: Infinity, delay: 0.4 }}
-                  />
-                  <span className="text-xs font-semibold ml-2">Thinking...</span>
+
+              {/* Quick suggestions if context is selected */}
+              {contextText && !answer && !isLoading && (
+                <div className="flex flex-wrap gap-2 pt-1">
+                  <button
+                    onClick={() => handleSend('Giải thích đoạn này thật đơn giản, dễ hiểu với ví dụ đời thực.')}
+                    className="text-xs py-1.5 px-3 bg-slate-800/80 hover:bg-indigo-600 hover:text-white text-slate-300 rounded-lg border border-slate-700/60 transition-colors"
+                  >
+                    💡 Giải thích đơn giản
+                  </button>
+                  <button
+                    onClick={() => handleSend('Cho tôi một ví dụ code thực tế minh họa cho khái niệm này.')}
+                    className="text-xs py-1.5 px-3 bg-slate-800/80 hover:bg-indigo-600 hover:text-white text-slate-300 rounded-lg border border-slate-700/60 transition-colors"
+                  >
+                    💻 Cho ví dụ code
+                  </button>
+                  <button
+                    onClick={() => handleSend('Tóm tắt ý chính quan trọng nhất cần ghi nhớ ở đây.')}
+                    className="text-xs py-1.5 px-3 bg-slate-800/80 hover:bg-indigo-600 hover:text-white text-slate-300 rounded-lg border border-slate-700/60 transition-colors"
+                  >
+                    📝 Tóm tắt ý chính
+                  </button>
                 </div>
               )}
+
+              {/* Loading Indicator */}
+              {isLoading && (
+                <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 flex items-center gap-3 text-indigo-400 w-fit">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span className="text-xs font-semibold text-slate-300">AI Tutor đang suy nghĩ và phân tích...</span>
+                </div>
+              )}
+
+              {/* Error Message */}
+              {error && (
+                <div className="bg-red-500/10 border border-red-500/30 text-red-400 text-xs p-3.5 rounded-xl leading-relaxed">
+                  {error}
+                </div>
+              )}
+
+              {/* Answer Content */}
               {answer && !isLoading && (
-                <div className="bg-purple-50 rounded-xl p-5 shadow-sm border border-purple-100 prose prose-sm max-w-none text-slate-700">
-                  <ReactMarkdown>{answer}</ReactMarkdown>
-                  
+                <div className="bg-slate-900/90 rounded-2xl p-5 border border-slate-800 text-slate-200 text-sm leading-relaxed shadow-lg">
+                  <div className="prose prose-invert prose-sm max-w-none prose-p:leading-relaxed prose-pre:bg-slate-950 prose-pre:border prose-pre:border-slate-800">
+                    <ReactMarkdown>{answer}</ReactMarkdown>
+                  </div>
+
                   {onSaveToNotebook && (
-                    <div className="mt-4 pt-4 border-t border-purple-200 flex justify-end">
+                    <div className="mt-4 pt-4 border-t border-slate-800 flex justify-end">
                       <button
                         onClick={() => {
                           onSaveToNotebook(answer);
-                          alert("Đã lưu lời giải thích vào Notebook!");
+                          alert('Đã lưu câu trả lời vào Notebook cá nhân!');
                         }}
-                        className="text-xs font-bold text-purple-600 bg-purple-100 hover:bg-purple-200 px-3 py-1.5 rounded-lg transition-colors flex items-center"
+                        className="text-xs font-bold text-indigo-300 bg-indigo-500/15 hover:bg-indigo-500/25 border border-indigo-500/30 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5"
                       >
-                        <Bookmark className="w-3 h-3 mr-1" />
-                        Lưu vào Notebook
+                        <Bookmark className="w-3.5 h-3.5" />
+                        <span>Lưu vào Notebook</span>
                       </button>
                     </div>
                   )}
                 </div>
               )}
+
+              {!contextText && !answer && !isLoading && (
+                <div className="text-center py-12 px-4 text-slate-500 text-xs">
+                  <HelpCircle className="w-8 h-8 mx-auto mb-2 opacity-40 text-indigo-400" />
+                  <p>Hãy bôi đen (highlight) một đoạn văn bản trong bài học hoặc đặt câu hỏi bất kỳ ở khung bên dưới.</p>
+                </div>
+              )}
             </div>
 
-            <div className="p-4 bg-white border-t border-slate-200">
-              <div className="flex items-center space-x-2">
-                <input 
+            {/* Input Footer */}
+            <div className="p-4 bg-slate-950 border-t border-slate-800">
+              <div className="flex items-center gap-2">
+                <input
                   type="text"
                   value={question}
                   onChange={(e) => setQuestion(e.target.value)}
-                  placeholder={contextText ? "Ask a question about the context..." : "Ask me anything..."}
-                  className="flex-1 bg-slate-100 border-none rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  placeholder={contextText ? 'Đặt câu hỏi về đoạn văn bản này...' : 'Hỏi AI bất kỳ điều gì về bài học...'}
+                  className="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-500/60 focus:border-indigo-500 transition-all"
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
                       e.preventDefault();
@@ -142,11 +188,12 @@ export const TutorSidebar: React.FC<Props> = ({ isOpen, onClose, contextText, on
                   }}
                 />
                 <button
-                  onClick={handleSend}
+                  onClick={() => handleSend()}
                   disabled={!question.trim() || isLoading}
-                  className="bg-purple-600 text-white p-3 rounded-xl disabled:opacity-50 hover:bg-purple-700 transition-colors"
+                  className="bg-indigo-600 hover:bg-indigo-500 text-white p-3 rounded-xl disabled:opacity-40 transition-colors shadow-md shadow-indigo-600/30 shrink-0"
+                  title="Gửi câu hỏi"
                 >
-                  {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
+                  {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                 </button>
               </div>
             </div>

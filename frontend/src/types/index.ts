@@ -60,6 +60,7 @@ export interface Course {
   currentStepIndex: number;
   userId?: number;
   isPublic?: boolean;
+  status?: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'FAILED' | string;
   lessons: Lesson[];
 }
 

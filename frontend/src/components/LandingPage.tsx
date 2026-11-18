@@ -1,8 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { BookOpen, Search, ArrowRight, UploadCloud, Users, Sparkles } from 'lucide-react';
+import {
+  BookOpen,
+  Search,
+  ArrowRight,
+  UploadCloud,
+  Users,
+  Sparkles,
+  Zap,
+  Code2,
+  BrainCircuit,
+  GraduationCap,
+} from 'lucide-react';
 import type { Course } from '../types';
-import axios from 'axios';
+import { courseApi } from '../services/api';
 
 interface Props {
   onLoginClick: () => void;
@@ -13,173 +24,189 @@ export const LandingPage: React.FC<Props> = ({ onLoginClick }) => {
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
-    // Fetch community courses to showcase
-    axios.get('http://localhost:8080/api/courses/community')
-      .then(res => {
-        // Just take top 3 or 4 for the landing page
-        setTrendingCourses(res.data.slice(0, 4));
+    courseApi
+      .getCommunityCourses()
+      .then((data) => {
+        setTrendingCourses((data || []).slice(0, 4));
       })
-      .catch(err => console.error("Failed to fetch community courses", err));
+      .catch((err) => console.error('[LandingPage] Lỗi tải khóa học cộng đồng:', err));
   }, []);
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans selection:bg-indigo-100">
-      {/* Navbar */}
-      <nav className="bg-white border-b border-slate-200 sticky top-0 z-50">
+    <div className="min-h-screen bg-[#090D16] font-sans text-slate-300 selection:bg-indigo-500/30 selection:text-white overflow-hidden">
+      {/* Background radial blobs */}
+      <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-indigo-600/15 rounded-full blur-[160px] pointer-events-none" />
+      <div className="fixed top-1/3 -right-40 w-[500px] h-[500px] bg-purple-600/10 rounded-full blur-[140px] pointer-events-none" />
+
+      {/* NAVBAR */}
+      <nav className="border-b border-slate-800/80 bg-slate-950/70 backdrop-blur-md sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-20 items-center">
-            <div className="flex items-center space-x-2">
-              <div className="bg-indigo-600 p-2 rounded-xl">
-                <BookOpen className="w-6 h-6 text-white" />
+            <div className="flex items-center gap-3">
+              <div className="bg-indigo-600 p-2.5 rounded-2xl shadow-lg shadow-indigo-600/20 border border-indigo-500/30">
+                <BrainCircuit className="w-6 h-6 text-white" />
               </div>
-              <span className="text-2xl font-black tracking-tight text-slate-800">
-                Course<span className="text-indigo-600">Engine</span>
+              <span className="text-xl sm:text-2xl font-black tracking-tight text-white">
+                Course<span className="text-indigo-400">Engine</span>
+                <span className="ml-2 text-[10px] font-bold uppercase tracking-wider text-emerald-400 bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 rounded-full align-middle">
+                  AI Interactive
+                </span>
               </span>
             </div>
-            <div className="flex items-center space-x-6">
-              <button className="text-slate-500 hover:text-indigo-600 font-medium transition-colors">
-                Explore
-              </button>
-              <button 
+
+            <div className="flex items-center gap-4 sm:gap-6">
+              <button
                 onClick={onLoginClick}
-                className="text-slate-500 hover:text-indigo-600 font-medium transition-colors"
+                className="text-slate-400 hover:text-white font-semibold transition-colors text-sm"
               >
-                Sign In
+                Đăng nhập
               </button>
-              <button 
+              <button
                 onClick={onLoginClick}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-6 py-2.5 rounded-full transition-all transform hover:-translate-y-0.5 shadow-lg shadow-indigo-600/30"
+                className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-5 sm:px-6 py-2.5 rounded-xl transition-all shadow-lg shadow-indigo-600/30 hover:scale-[1.02] active:scale-[0.98] text-sm"
               >
-                Get Started
+                Bắt đầu học miễn phí
               </button>
             </div>
           </div>
         </div>
       </nav>
 
-      {/* Hero Section */}
-      <div className="relative overflow-hidden bg-white">
-        {/* Background blobs */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-full overflow-hidden pointer-events-none">
-          <div className="absolute top-[-10%] right-[-5%] w-[500px] h-[500px] rounded-full bg-indigo-50 blur-3xl opacity-50" />
-          <div className="absolute bottom-[-10%] left-[-5%] w-[600px] h-[600px] rounded-full bg-purple-50 blur-3xl opacity-50" />
-        </div>
-
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-32 relative z-10 text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            <h1 className="text-5xl md:text-7xl font-black text-slate-900 tracking-tight mb-8">
-              Turn any textbook into an <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">
-                Interactive Course.
-              </span>
-            </h1>
-            <p className="text-xl text-slate-500 max-w-2xl mx-auto mb-12 leading-relaxed">
-              Upload your boring PDFs and let AI generate gamified lessons, coding challenges, and contextual quizzes in seconds. Join the community library today.
-            </p>
-          </motion.div>
-
-          {/* Search Bar mimicking StuDocu */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-            className="max-w-3xl mx-auto relative group"
-          >
-            <div className="absolute inset-0 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-2xl blur opacity-25 group-hover:opacity-40 transition-opacity duration-300"></div>
-            <div className="relative bg-white rounded-2xl shadow-xl flex items-center p-2 border border-slate-100">
-              <Search className="w-6 h-6 text-slate-400 ml-4" />
-              <input 
-                type="text"
-                placeholder="Search for your university, course, or textbook..."
-                className="flex-1 px-6 py-4 outline-none text-lg text-slate-700 bg-transparent"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onFocus={onLoginClick} // Just route to login for demo purposes
-              />
-              <button 
-                onClick={onLoginClick}
-                className="bg-slate-900 text-white px-8 py-4 rounded-xl font-bold hover:bg-slate-800 transition-colors"
-              >
-                Search
-              </button>
-            </div>
-          </motion.div>
-
-          {/* Quick Stats */}
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 1, delay: 0.3 }}
-            className="mt-16 flex justify-center items-center space-x-12 text-slate-500 font-medium"
-          >
-            <div className="flex items-center"><Users className="w-5 h-5 mr-2 text-indigo-500" /> 10,000+ Students</div>
-            <div className="flex items-center"><BookOpen className="w-5 h-5 mr-2 text-purple-500" /> 5,000+ Courses</div>
-            <div className="flex items-center"><Sparkles className="w-5 h-5 mr-2 text-yellow-500" /> Powered by AI</div>
-          </motion.div>
-        </div>
-      </div>
-
-      {/* Trending Community Courses */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
-        <div className="flex justify-between items-end mb-12">
-          <div>
-            <h2 className="text-3xl font-black text-slate-900 mb-2">Trending in the Community</h2>
-            <p className="text-slate-500">Discover popular courses generated by other students.</p>
+      {/* HERO SECTION */}
+      <section className="relative pt-20 pb-24 md:pt-28 md:pb-32 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto text-center z-10">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-semibold mb-6">
+            <Sparkles className="w-4 h-4" />
+            <span>Biến mọi tài liệu PDF/DOCX thành khóa học gamified tương tác</span>
           </div>
-          <button 
+
+          <h1 className="text-4xl sm:text-6xl md:text-7xl font-black text-white tracking-tight mb-6 leading-tight">
+            Chuyển giáo trình khô khan thành <br />
+            <span className="text-indigo-400">Trải nghiệm học tương tác thông minh.</span>
+          </h1>
+
+          <p className="text-base sm:text-lg text-slate-400 max-w-2xl mx-auto mb-10 leading-relaxed">
+            Chỉ cần tải lên file giáo trình của bạn, AI sẽ phân tích ngữ cảnh, tạo bài giảng phân đoạn, bài tập điền từ,
+            thử thách lập trình và kèm cặp bạn 1-1 với trợ lý AI Tutor thời gian thực.
+          </p>
+        </motion.div>
+
+        {/* SEARCH BAR CTA */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="max-w-2xl mx-auto relative mb-12"
+        >
+          <div className="relative bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl flex items-center p-2 focus-within:border-indigo-500/60 transition-colors">
+            <Search className="w-5 h-5 text-slate-400 ml-4 shrink-0" />
+            <input
+              type="text"
+              placeholder="Tìm kiếm môn học, công nghệ, hoặc giáo trình..."
+              className="flex-1 px-4 py-3 outline-none text-sm text-white placeholder-slate-500 bg-transparent"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onFocus={onLoginClick}
+            />
+            <button
+              onClick={onLoginClick}
+              className="bg-indigo-600 hover:bg-indigo-500 text-white px-5 sm:px-6 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all shadow-md shadow-indigo-600/30 shrink-0"
+            >
+              Khám phá ngay
+            </button>
+          </div>
+        </motion.div>
+
+        {/* FEATURE PILL HIGHLIGHTS */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.8, delay: 0.2 }}
+          className="flex flex-wrap justify-center items-center gap-6 sm:gap-10 text-xs sm:text-sm text-slate-400 font-medium"
+        >
+          <div className="flex items-center gap-2 bg-slate-900/60 border border-slate-800 px-4 py-2 rounded-full">
+            <Zap className="w-4 h-4 text-amber-400" />
+            <span>Tạo khóa học tức thì với AI</span>
+          </div>
+          <div className="flex items-center gap-2 bg-slate-900/60 border border-slate-800 px-4 py-2 rounded-full">
+            <Code2 className="w-4 h-4 text-cyan-400" />
+            <span>Thực hành code trực tiếp trên trình duyệt</span>
+          </div>
+          <div className="flex items-center gap-2 bg-slate-900/60 border border-slate-800 px-4 py-2 rounded-full">
+            <GraduationCap className="w-4 h-4 text-emerald-400" />
+            <span>Thư viện bài giảng mở từ cộng đồng</span>
+          </div>
+        </motion.div>
+      </section>
+
+      {/* TRENDING COMMUNITY COURSES */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 border-t border-slate-800/80">
+        <div className="flex justify-between items-end mb-10">
+          <div>
+            <div className="text-xs font-semibold uppercase tracking-wider text-indigo-400 mb-1 flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Cộng đồng học tập</span>
+            </div>
+            <h2 className="text-2xl sm:text-3xl font-black text-white">Khóa học nổi bật từ cộng đồng</h2>
+            <p className="text-slate-400 text-xs sm:text-sm mt-1">Các khóa học được đóng góp và chia sẻ bởi các bạn sinh viên.</p>
+          </div>
+          <button
             onClick={onLoginClick}
-            className="text-indigo-600 font-bold hover:text-indigo-700 flex items-center"
+            className="text-indigo-400 font-bold hover:text-indigo-300 flex items-center gap-1 text-sm group"
           >
-            View all <ArrowRight className="w-4 h-4 ml-1" />
+            <span>Xem tất cả</span>
+            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
           </button>
         </div>
 
         {trendingCourses.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {trendingCourses.map(course => (
-              <div 
-                key={course.id} 
+            {trendingCourses.map((course) => (
+              <div
+                key={course.id}
                 onClick={onLoginClick}
-                className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all cursor-pointer group"
+                className="bg-slate-900/70 border border-slate-800/80 rounded-2xl p-6 hover:border-indigo-500/50 hover:shadow-xl hover:-translate-y-1 transition-all cursor-pointer group flex flex-col backdrop-blur-sm"
               >
-                <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                  <BookOpen className="w-6 h-6" />
+                <div className="w-11 h-11 bg-indigo-500/15 text-indigo-400 border border-indigo-500/30 rounded-xl flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
+                  <BookOpen className="w-5 h-5" />
                 </div>
-                <h3 className="text-lg font-bold text-slate-800 mb-2 line-clamp-2 group-hover:text-indigo-600 transition-colors">
+                <h3 className="text-base font-bold text-white mb-2 line-clamp-2 group-hover:text-emerald-400 transition-colors leading-snug">
                   {course.title}
                 </h3>
-                <p className="text-sm text-slate-500 mb-4 line-clamp-2">
-                  {course.description}
+                <p className="text-xs text-slate-400 mb-6 line-clamp-2 leading-relaxed">
+                  {course.description || 'Khóa học được sinh tự động bằng tài liệu tương tác.'}
                 </p>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="font-semibold text-slate-700">User_{course.userId}</span>
-                  <span className="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full font-bold text-xs">
-                    Free
+                <div className="mt-auto pt-4 border-t border-slate-800/60 flex items-center justify-between text-xs">
+                  <span className="text-slate-500 font-medium flex items-center gap-1">
+                    <Users className="w-3.5 h-3.5 text-slate-400" />
+                    <span>Học viên mở</span>
+                  </span>
+                  <span className="bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 px-2.5 py-0.5 rounded-full font-bold text-[11px]">
+                    Miễn phí
                   </span>
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          <div className="text-center py-20 bg-white rounded-3xl border border-slate-200 border-dashed">
-            <UploadCloud className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-            <p className="text-slate-500 font-medium">No public courses available yet.<br/>Be the first to share one!</p>
+          <div className="text-center py-16 bg-slate-900/40 rounded-3xl border border-slate-800/60 border-dashed">
+            <UploadCloud className="w-10 h-10 text-slate-500 mx-auto mb-3" />
+            <p className="text-slate-400 text-sm font-medium">Chưa có khóa học cộng đồng nào.</p>
+            <p className="text-slate-500 text-xs mt-1">Hãy đăng nhập và là người đầu tiên tạo khóa học!</p>
           </div>
         )}
-      </div>
-      
-      {/* Footer */}
-      <footer className="bg-slate-900 text-slate-400 py-12 border-t border-slate-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center">
-          <div className="flex items-center space-x-2 mb-4 md:mb-0">
-            <BookOpen className="w-6 h-6 text-indigo-500" />
-            <span className="text-xl font-black text-white">CourseEngine</span>
+      </section>
+
+      {/* FOOTER */}
+      <footer className="bg-slate-950 text-slate-500 py-10 border-t border-slate-800/80 text-xs">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-4">
+          <div className="flex items-center gap-2">
+            <div className="bg-indigo-600/20 p-1.5 rounded-lg border border-indigo-500/30 text-indigo-400">
+              <BrainCircuit className="w-4 h-4" />
+            </div>
+            <span className="text-sm font-bold text-white">AI Interactive Course Engine</span>
           </div>
-          <p>© 2026 AI Interactive Course Engine. Built for the Hackathon.</p>
+          <p>© 2026 AI Interactive Course Engine. Đồng bộ chuẩn kiến trúc Spring Boot 3 & React.</p>
         </div>
       </footer>
     </div>

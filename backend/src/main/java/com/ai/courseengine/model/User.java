@@ -20,6 +20,8 @@ public class User {
     @Column
     private String username;
 
+    @Column
+    private String role;
     @Column(columnDefinition = "TEXT")
     private String pinnedNotes;
 }

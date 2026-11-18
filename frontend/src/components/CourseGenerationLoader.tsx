@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, Brain, CheckCircle2, AlertCircle, RefreshCw, BookOpen, Layers } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { subscribeCourseProgress, type CourseProgressMessage } from '../services/websocket';
-import axios from 'axios';
+import { courseApi } from '../services/api';
 
 interface CourseGenerationLoaderProps {
   courseId: number;
@@ -78,8 +78,8 @@ export const CourseGenerationLoader: React.FC<CourseGenerationLoaderProps> = ({
           setCurrentStep(3);
         } else if (data.status === 'COMPLETED') {
           try {
-            const res = await axios.get(`http://localhost:8080/api/courses/${courseId}`);
-            handleSuccessData(res.data);
+            const courseData = await courseApi.getCourse(courseId);
+            handleSuccessData(courseData);
           } catch (err) {
             console.error('Lỗi lấy thông tin khóa học:', err);
           }
@@ -101,8 +101,7 @@ export const CourseGenerationLoader: React.FC<CourseGenerationLoaderProps> = ({
         return;
       }
       try {
-        const res = await axios.get(`http://localhost:8080/api/courses/${courseId}`);
-        const courseData = res.data;
+        const courseData = await courseApi.getCourse(courseId);
         if (courseData.status === 'COMPLETED') {
           clearInterval(interval);
           handleSuccessData(courseData);
@@ -165,7 +164,7 @@ export const CourseGenerationLoader: React.FC<CourseGenerationLoaderProps> = ({
                 <motion.div
                   animate={{ scale: [1, 1.15, 1] }}
                   transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-                  className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/30"
+                  className="w-16 h-16 rounded-2xl bg-indigo-600 border border-indigo-500/40 flex items-center justify-center shadow-lg shadow-indigo-500/20"
                 >
                   <Brain className="w-8 h-8 text-white" />
                 </motion.div>

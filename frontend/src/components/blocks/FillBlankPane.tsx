@@ -23,30 +23,35 @@ const FillBlankPane: React.FC<Props> = ({ block, onSuccess, onAskHint }) => {
     const a = input.replace(/`/g, '').trim().toLowerCase().replace(/[.,!?;:"']/g, '');
     const b = target.replace(/`/g, '').trim().toLowerCase().replace(/[.,!?;:"']/g, '');
     if (a === b) return true;
-    if (a.length > 3 && b.includes(a)) return true;
-    if (b.length > 3 && a.includes(b)) return true;
-    return false;
+
+    const cleanInput = input.trim().toLowerCase();
+    const cleanTarget = target.trim().toLowerCase();
+    if (cleanInput === cleanTarget) return true;
+
+    const noPunctInput = cleanInput.replace(/[.,!?;:"']/g, '');
+    const noPunctTarget = cleanTarget.replace(/[.,!?;:"']/g, '');
+    return noPunctInput === noPunctTarget;
   };
 
   const handleChange = (key: string, value: string) => {
-    setAnswers(prev => ({ ...prev, [key]: value }));
-    // Reset status of this specific field back to idle when user types
-    setFieldStatus(prev => ({ ...prev, [key]: 'idle' }));
+    setAnswers((prev) => ({ ...prev, [key]: value }));
+    setFieldStatus((prev) => ({ ...prev, [key]: 'idle' }));
   };
 
   const keys = Object.keys(block.correctAnswers || {});
   const totalCount = keys.length;
-  const correctCount = keys.filter(k => fieldStatus[k] === 'correct').length;
-  const incorrectCount = keys.filter(k => fieldStatus[k] === 'incorrect').length;
+  const correctCount = keys.filter((k) => fieldStatus[k] === 'correct').length;
+  const incorrectCount = totalCount - correctCount;
 
   const handleSubmit = () => {
-    const newStatus: Record<string, 'correct' | 'incorrect'> = {};
     let allCorrect = true;
+    const newStatus: Record<string, 'correct' | 'incorrect'> = {};
 
     for (const key of keys) {
-      const userVal = answers[key] || '';
-      const targetVal = block.correctAnswers[key];
-      if (isFuzzyMatch(userVal, targetVal)) {
+      const userAnswer = answers[key] || '';
+      const expected = block.correctAnswers[key];
+
+      if (isFuzzyMatch(userAnswer, expected)) {
         newStatus[key] = 'correct';
       } else {
         newStatus[key] = 'incorrect';
@@ -62,7 +67,7 @@ const FillBlankPane: React.FC<Props> = ({ block, onSuccess, onAskHint }) => {
       confetti({
         particleCount: 120,
         spread: 75,
-        origin: { y: 0.6 }
+        origin: { y: 0.6 },
       });
       setTimeout(onSuccess, 2200);
     } else {
@@ -81,11 +86,10 @@ const FillBlankPane: React.FC<Props> = ({ block, onSuccess, onAskHint }) => {
     setTimeout(onSuccess, 2200);
   };
 
-  // Replace {1} or [key] with interactive input fields
   const renderQuestionText = () => {
     const parts = block.questionText.split(/(\[[^\]]+\]|\{[\w]+\})/g);
     let blankIndex = 0;
-    
+
     return parts.map((part, index) => {
       const match = part.match(/\[([^\]]+)\]|\{([\w]+)\}/);
       if (match) {
@@ -102,12 +106,12 @@ const FillBlankPane: React.FC<Props> = ({ block, onSuccess, onAskHint }) => {
                 type="text"
                 disabled={isSuccess || isFieldCorrect}
                 placeholder={`(ô ${blankIndex})`}
-                className={`px-3 py-1.5 rounded-xl text-center font-bold text-base transition-all outline-none border-2 shadow-sm min-w-[130px] max-w-[220px] ${
+                className={`px-3 py-1.5 rounded-xl text-center font-bold text-sm sm:text-base transition-all outline-none border-2 shadow-sm min-w-[130px] max-w-[220px] ${
                   isFieldCorrect
-                    ? 'border-emerald-500 bg-emerald-50 text-emerald-800 shadow-emerald-100'
+                    ? 'border-emerald-500 bg-emerald-950/40 text-emerald-300'
                     : isFieldIncorrect
-                    ? 'border-rose-500 bg-rose-50 text-rose-800 shadow-rose-100 animate-shake'
-                    : 'border-slate-300 bg-white text-indigo-700 hover:border-indigo-400 focus:border-indigo-600 focus:ring-2 focus:ring-indigo-200'
+                    ? 'border-rose-500 bg-rose-950/40 text-rose-300 animate-shake'
+                    : 'border-slate-700 bg-slate-950 text-white hover:border-slate-500 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500'
                 }`}
                 value={answers[key] || ''}
                 onChange={(e) => handleChange(key, e.target.value)}
@@ -126,44 +130,47 @@ const FillBlankPane: React.FC<Props> = ({ block, onSuccess, onAskHint }) => {
           </span>
         );
       }
-      return <span key={index} className="text-lg text-slate-800 leading-relaxed font-normal">{renderFormattedText(part)}</span>;
+      return (
+        <span key={index} className="text-base sm:text-lg text-slate-200 leading-relaxed font-normal">
+          {renderFormattedText(part)}
+        </span>
+      );
     });
   };
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, scale: 0.98 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="flex flex-col h-full justify-center items-center p-6 sm:p-8 bg-gradient-to-br from-indigo-50/70 via-white to-purple-50/50 rounded-3xl shadow-sm border border-indigo-100/80"
+      className="flex flex-col h-full justify-center items-center p-6 sm:p-8 bg-slate-900/90 rounded-3xl shadow-xl border border-slate-800"
     >
       <div className="w-full max-w-2xl text-center space-y-6">
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-indigo-100/80 text-indigo-700 text-sm font-bold rounded-full">
+        <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-indigo-500/15 border border-indigo-500/30 text-indigo-300 text-xs sm:text-sm font-bold rounded-full">
           <span>Điền từ vào chỗ trống</span>
           <span>•</span>
           <span>{totalCount} vị trí</span>
         </div>
-        
-        <div className="p-6 sm:p-8 bg-white/90 backdrop-blur-sm rounded-2xl border border-slate-100 shadow-sm leading-loose text-left">
+
+        <div className="p-6 sm:p-8 bg-slate-950/80 backdrop-blur-sm rounded-2xl border border-slate-800 shadow-inner leading-loose text-left">
           {renderQuestionText()}
         </div>
 
-        {/* Feedback chi tiết khi bấm kiểm tra */}
         <AnimatePresence>
           {hasChecked && (
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
               className={`p-4 rounded-2xl border font-medium text-left flex items-start gap-3 ${
-                isSuccess 
-                  ? 'bg-emerald-50 border-emerald-200 text-emerald-900' 
-                  : 'bg-rose-50 border-rose-200 text-rose-900'
+                isSuccess
+                  ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
+                  : 'bg-rose-500/10 border-rose-500/30 text-rose-300'
               }`}
             >
               {isSuccess ? (
-                <CheckCircle2 className="w-5 h-5 text-emerald-600 mt-0.5 shrink-0" />
+                <CheckCircle2 className="w-5 h-5 text-emerald-400 mt-0.5 shrink-0" />
               ) : (
-                <XCircle className="w-5 h-5 text-rose-600 mt-0.5 shrink-0" />
+                <XCircle className="w-5 h-5 text-rose-400 mt-0.5 shrink-0" />
               )}
               <div className="space-y-1">
                 <div className="font-bold text-sm">
@@ -172,8 +179,8 @@ const FillBlankPane: React.FC<Props> = ({ block, onSuccess, onAskHint }) => {
                     : `⚠️ Đã đúng ${correctCount}/${totalCount} chỗ trống. Còn ${incorrectCount} chỗ bị sai!`}
                 </div>
                 {!isSuccess && (
-                  <p className="text-xs text-rose-700 leading-normal">
-                    👉 <strong>Chỉ dẫn:</strong> Những ô <span className="text-rose-600 font-bold underline">viền đỏ</span> là chưa chính xác. Ô <span className="text-emerald-600 font-bold underline">viền xanh</span> đã đúng rồi và được giữ nguyên. Bạn chỉ cần sửa lại những ô màu đỏ rồi bấm kiểm tra lại nhé!
+                  <p className="text-xs text-rose-300/80 leading-normal">
+                    👉 <strong>Chỉ dẫn:</strong> Những ô <span className="text-rose-400 font-bold underline">viền đỏ</span> là chưa chính xác. Ô <span className="text-emerald-400 font-bold underline">viền xanh</span> đã đúng rồi. Bạn chỉ cần sửa lại những ô màu đỏ rồi bấm kiểm tra lại nhé!
                   </p>
                 )}
               </div>
@@ -182,12 +189,12 @@ const FillBlankPane: React.FC<Props> = ({ block, onSuccess, onAskHint }) => {
         </AnimatePresence>
 
         {showHint && !isSuccess && block.hints && block.hints.length > 0 && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-amber-800 bg-amber-50 border border-amber-200 p-4 rounded-xl text-sm text-left flex items-start gap-3"
+            className="text-amber-300 bg-amber-500/10 border border-amber-500/30 p-4 rounded-xl text-xs sm:text-sm text-left flex items-start gap-3"
           >
-            <HelpCircle className="w-5 h-5 text-amber-600 mt-0.5 shrink-0" />
+            <HelpCircle className="w-5 h-5 text-amber-400 mt-0.5 shrink-0" />
             <div>
               <strong>Gợi ý:</strong> {renderFormattedText(block.hints[0])}
             </div>
@@ -196,11 +203,11 @@ const FillBlankPane: React.FC<Props> = ({ block, onSuccess, onAskHint }) => {
 
         {isSuccess && block.referenceLink && (
           <div className="pt-2 text-center">
-            <a 
-              href={block.referenceLink} 
-              target="_blank" 
-              rel="noopener noreferrer" 
-              className="inline-flex items-center text-indigo-600 hover:text-indigo-800 font-semibold text-sm transition-colors hover:underline"
+            <a
+              href={block.referenceLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center text-indigo-400 hover:text-indigo-300 font-semibold text-xs sm:text-sm transition-colors hover:underline"
             >
               🔗 Tài liệu tham khảo mở rộng
             </a>
@@ -212,25 +219,25 @@ const FillBlankPane: React.FC<Props> = ({ block, onSuccess, onAskHint }) => {
             <>
               <button
                 onClick={handleSubmit}
-                className="px-7 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 shadow-md hover:shadow-indigo-500/25 transition-all transform hover:-translate-y-0.5 active:translate-y-0"
+                className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold text-xs sm:text-sm shadow-lg shadow-indigo-600/30 transition-all hover:scale-[1.02] active:scale-[0.98]"
               >
                 Kiểm tra đáp án
               </button>
               {onAskHint && (
                 <button
                   onClick={() => onAskHint(block.questionText)}
-                  className="px-5 py-3 bg-purple-50 text-purple-700 border border-purple-200 rounded-xl font-bold hover:bg-purple-100 transition-all inline-flex items-center gap-2"
+                  className="px-4 py-2.5 bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 rounded-xl font-bold hover:bg-indigo-500/25 transition-all inline-flex items-center gap-2 text-xs sm:text-sm"
                 >
-                  <Sparkles className="w-4 h-4 text-purple-600" />
-                  Hỏi gợi ý từ AI
+                  <Sparkles className="w-4 h-4 text-indigo-400" />
+                  <span>Hỏi gợi ý từ AI</span>
                 </button>
               )}
               <button
                 onClick={handleShowAnswer}
-                className="px-5 py-3 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-xl font-bold transition-all inline-flex items-center gap-2"
+                className="px-4 py-2.5 bg-slate-800 text-slate-300 hover:bg-slate-700 rounded-xl font-bold transition-all inline-flex items-center gap-2 text-xs sm:text-sm border border-slate-700"
               >
-                <Eye className="w-4 h-4 text-slate-500" />
-                Xem đáp án
+                <Eye className="w-4 h-4 text-slate-400" />
+                <span>Xem đáp án</span>
               </button>
             </>
           )}

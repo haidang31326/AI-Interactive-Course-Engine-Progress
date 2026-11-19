@@ -162,9 +162,18 @@ public class CourseService {
     }
 
     public void processCourseGeneration(Long courseId, String text) {
-        Course course = courseRepository.findById(courseId).orElseThrow(() -> new RuntimeException("course khong ton tai"));
+        if (courseId == null) {
+            log.warn("⚠️ [processCourseGeneration] courseId is null. Skipping message.");
+            return;
+        }
+        Optional<Course> courseOpt = courseRepository.findById(courseId);
+        if (courseOpt.isEmpty()) {
+            log.warn("⚠️ [processCourseGeneration] Course ID {} not found in database. Skipping stale/invalid message.", courseId);
+            return;
+        }
+        Course course = courseOpt.get();
         if("COMPLETED".equalsIgnoreCase(course.getStatus())) {
-            log.warn("[Idempotent Consumer] Khóa học ID: {} đã hoàn thành từ trước. Bỏ qua event để tránh gọi AI trùng lặp!\" ", courseId);
+            log.warn("[Idempotent Consumer] Khóa học ID: {} đã hoàn thành từ trước. Bỏ qua event để tránh gọi AI trùng lặp! ", courseId);
             return;
         }
         course.setStatus("PROCESSING");
@@ -174,7 +183,7 @@ public class CourseService {
             course.getLessons().clear();
         }*/
         List<Lesson> existingLesson = lessonRepository.findByCourseIdOrderByOrderAsc(courseId);
-        if(existingLesson.isEmpty()) {
+        if(!existingLesson.isEmpty()) {
             lessonRepository.deleteAll(existingLesson);
         }
 
@@ -213,7 +222,15 @@ public class CourseService {
     }
     @Transactional
     public void handleGenerationFailure(Long courseId,String text) {
-        Course course = courseRepository.findById(courseId).orElseThrow(() -> new RuntimeException("course khong ton tai"));
+        if (courseId == null) {
+            log.warn("⚠️ [handleGenerationFailure] courseId is null. Skipping DLT handling.");
+            return;
+        }
+        Course course = courseRepository.findById(courseId).orElse(null);
+        if (course == null) {
+            log.warn("⚠️ [handleGenerationFailure] Course ID {} not found in database. Skipping DLT failure handling.", courseId);
+            return;
+        }
         course.setStatus("FAILED");
         courseRepository.save(course);
 
